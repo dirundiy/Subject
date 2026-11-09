@@ -204,6 +204,12 @@ kbd{font-family:var(--mono);font-size:.75rem;border:1px solid var(--line);border
 textarea{width:100%;min-height:200px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px 14px;font:inherit;font-family:var(--mono);font-size:.85rem;resize:vertical}
 textarea:focus{outline:none;border-color:var(--accent)}
 .steps{margin:0;padding-left:1.3em;display:grid;gap:6px}
+.turns{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:14px}
+.turn{display:flex;flex-direction:column;align-items:center;gap:6px;margin-top:6px}
+.turn svg{width:100%;max-width:220px;border-radius:10px;display:block}
+.turn-cap{margin:0;font-size:.85rem;color:var(--muted);max-width:34ch;text-align:center}
+.t-ground{fill:var(--surface-2)} .t-path{stroke:var(--accent)} .t-head,.t-car{fill:var(--accent)}
+.cardno{font-size:.75rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--accent)}
 
 /* ---------- math ---------- */
 .mathgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:22px;align-items:start}
@@ -269,7 +275,7 @@ textarea:focus{outline:none;border-color:var(--accent)}
     <section class="panel" id="p-drivers" role="tabpanel" aria-labelledby="tab-drivers" hidden>
       <div class="toolbar">
         <div class="seg" id="d-mode">
-          <button data-v="cards">Flashcards</button><button data-v="test">Practice test</button><button data-v="sheet">Cheat sheet</button><button data-v="import">My Quizlet cards</button>
+          <button data-v="cards">Flashcards</button><button data-v="test">Practice test</button><button data-v="sheet">Cheat sheet</button>
         </div>
         <div class="chips" id="d-src"></div>
       </div>
@@ -446,7 +452,7 @@ const DRIVERS = [
 {q:"About how long does the body take to process one standard drink?",a:"About 1 hour",w:["About 15 minutes","About 3 hours","About 30 minutes"],why:"Roughly one drink per hour, no matter how big the person is or what they do."},
 {q:"Which drinks contain about the same amount of alcohol?",a:"12 oz of beer, 5 oz of wine, and 1.5 oz of 80-proof liquor",w:["12 oz of beer, 12 oz of wine, and 12 oz of liquor","A pint of beer and a shot of liquor only","Beer always has less alcohol than wine or liquor"],why:"Each of these is one standard drink."},
 {q:"Alcohol first affects which driving skill?",a:"Judgment",w:["Vision","Hearing","Muscle strength"],why:"Judgment goes first, which is why impaired drivers often think they're fine to drive."},
-{q:"Under good conditions, what is the minimum following distance behind the car ahead?",a:"At least 2 seconds",w:["1 second","One car length for every 20 mph","Half a second"],why:"Pick a fixed object and count. Add more time at night, in rain or snow, or behind trucks and motorcycles."},
+{q:"Under good conditions, what is the minimum following distance behind the car ahead?",a:"3 seconds",w:["1 second","One car length","Half a second"],why:"Pick a fixed object and count. Add more time at night, in rain or snow, or behind trucks and motorcycles."},
 {q:"How far before a turn must you signal in Delaware?",a:"At least 300 feet",w:["At least 100 feet","At least 50 feet","At least 500 feet"],why:"Delaware law requires a turn signal for at least the last 300 feet before you turn."},
 {q:"When must you dim your high beams for an oncoming vehicle?",a:"Within 500 feet",w:["Within 200 feet","Within 1,000 feet","Within 100 feet"],why:"Dim within 500 feet of oncoming traffic."},
 {q:"When following another vehicle, you must dim your high beams within:",a:"200 feet",w:["500 feet","50 feet","1,000 feet"],why:"Your high beams glare in the other driver's mirrors."},
@@ -459,7 +465,7 @@ const DRIVERS = [
 {q:"When parallel parking, your wheels must be within how far of the curb?",a:"12 inches",w:["6 inches","18 inches","24 inches"],why:"Within 12 inches, parallel to the curb."},
 {q:"When stopping for a train at a railroad crossing, stop:",a:"Between 15 and 50 feet from the nearest rail",w:["Right at the tracks","At least 100 feet away","Between 5 and 10 feet from the tracks"],why:"Trains overhang the rails, so never stop closer than 15 feet."},
 {q:"A school bus has its red lights flashing on a two-lane road. What must you do?",a:"Stop, whether you're behind it or coming toward it, and wait until the lights stop",w:["Slow down and pass carefully","Stop only if you are behind the bus","Stop only if children are visible"],why:"On an undivided road, traffic in both directions stops."},
-{q:"When do you NOT have to stop for a school bus with flashing red lights?",a:"When you're on the opposite side of a divided highway with a median",w:["When no children are visible","When you're running late","When the bus is on a two-lane road and you're coming toward it"],why:"A physical median or divider means opposite-direction traffic may continue carefully."},
+{q:"When do you NOT have to stop for a school bus with flashing red lights?",a:"When you're on the other side of a highway with 4 or more lanes and a median",w:["When no children are visible","When you're running late","When the bus is on a two-lane road and you're coming toward it"],why:"A median on a 4+ lane highway means opposite-direction traffic may continue carefully."},
 {q:"A school bus has flashing yellow (amber) lights. This means:",a:"Slow down and prepare to stop; the bus is about to stop",w:["Pass quickly before it stops","The bus is done loading","Nothing for other drivers"],why:"Yellow lights come on before the red lights and stop arm."},
 {q:"Unless posted otherwise, the speed limit in a Delaware business or residential district is:",a:"25 mph",w:["35 mph","30 mph","20 mph"],why:"25 mph in business and residential districts."},
 {q:"The speed limit in a Delaware school zone when the signs are active is:",a:"20 mph",w:["15 mph","25 mph","10 mph"],why:"20 mph when the school zone sign or lights say so."},
@@ -504,9 +510,87 @@ const DRIVERS = [
 {q:"During the second six months of a Delaware Level 1 permit, unsupervised driving is not allowed between:",a:"10 p.m. and 6 a.m.",w:["Midnight and 5 a.m.","9 p.m. and 5 a.m.","11 p.m. and 7 a.m."],why:"Nighttime driving is riskier for new drivers."}
 ];
 
+/* ================= class review set (from the student's Quizlet export) ================= */
+const CLASS = [
+{q:"What is the seatbelt law in Delaware?",a:"All occupants of a motor vehicle must be wearing a seat belt",w:["Only the driver must wear a seat belt","Only front-seat occupants must wear seat belts","Only passengers under 16 must wear seat belts"]},
+{q:"What do solid yellow lines mean?",a:"Passing is not allowed, and traffic is moving in different directions",w:["Passing is allowed when safe, and traffic moves the same direction","Traffic is moving in the same direction, and passing is not allowed","The lane is for turning only"]},
+{q:"Right turns on red:",a:"Allowed unless a sign makes them illegal",w:["Never allowed in Delaware","Allowed only at night","Allowed without stopping first"],why:"Always come to a complete stop first."},
+{q:"What should you do when approached by an emergency vehicle with flashing lights?",a:"Pull over to the right if possible, but most importantly, get out of the way",w:["Speed up to stay ahead of it","Stop immediately in your lane no matter what","Pull onto the left shoulder"]},
+{q:"Green signal",a:"Proceed with caution",w:["Stop","Prepare to stop","Go fast; you always have the right of way"]},
+{q:"Yellow signal",a:"Prepare to stop; if too close to stop, proceed with caution",w:["Speed up to beat the red light","Come to a complete stop no matter what","Proceed; it means the same as green"]},
+{q:"Red signal",a:"Come to a complete stop. Right on red is allowed unless a sign says otherwise, and left on red from a one-way street onto another one-way street is allowed unless a sign says otherwise",w:["Stop. No turns of any kind are ever allowed","Slow down and go if the intersection is clear","Stop. Left turns on red are allowed from any street"]},
+{q:"What is the penalty for failure to stop at the command of a police officer?",a:"Revocation of license",w:["A warning","A $25 fine","2 points on your record"]},
+{q:"If skidding, where do you steer?",a:"Steer in the direction you want to go",w:["Steer the opposite way from where you want to go","Don't steer; slam on the brakes","Let go of the wheel"]},
+{q:"What do you need to bring to the DMV to get your GDL license?",a:"$40, birth certificate, Social Security card, and two proofs of address",w:["$20 and your school ID","$40 and one proof of address","Birth certificate only, with no fee"]},
+{q:"When is the only time you do not have to stop for a school bus with flashing lights on?",a:"If you are on the other side of a highway with 4 or more lanes and a median",w:["When no children are visible","When you're on the other side of any two-lane road","When you're late for school"]},
+{q:"What does the \"No Zone\" refer to?",a:"The blind spots around a truck where crashes are more likely to occur",w:["An area where parking is prohibited","A lane that trucks may not use","A zone where passing is not allowed"]},
+{q:"How many DUI offenses do you need to be required to get an Ignition Interlock Device?",a:"1 offense",w:["2 offenses","3 offenses","Only if someone was injured"]},
+{q:"When do you start braking when exiting a high-speed expressway?",a:"In the exit lane",w:["In the travel lane, before the exit","Only at the end of the ramp","Before you signal"]},
+{q:"When are you permitted to make a left turn on red? (diagram on the test)",a:"When going from a one-way street onto another one-way street",w:["Any time no cars are coming","From a two-way street onto a one-way street","Never; left on red is always illegal"],why:"Your class notes: stick all the way to the outside, since we drive on the right side of the road.",d:"one"},
+{q:"Should a driver slow down, scan the area, and proceed with caution when children are present?",a:"Yes",w:["No, only in marked school zones","Only if the children are in a crosswalk","Only during school hours"]},
+{q:"When do headlights need to be used?",a:"When it is raining, when it's dark, and whenever the wipers are on",w:["Only after dark","Only on highways","Only in fog"]},
+{q:"What does the amount of traction a car has depend on?",a:"The brakes, the tires, and the road surface",w:["The engine size and the speed limit","The weight of the driver","The fuel type and the steering wheel"]},
+{q:"What is the penalty for anyone under 21 who consumes or possesses alcohol?",a:"May have license revoked for 30 days",w:["A warning only","License revoked for 5 years","No penalty if you weren't driving"]},
+{q:"What kind of line markings would allow you to legally pass another car?",a:"A broken yellow line on your side of the road or in the middle",w:["A solid yellow line on your side","Double solid yellow lines","A solid white line"]},
+{q:"Describe what a driver should do when approaching a roundabout.",a:"Yield to drivers already in the roundabout",w:["Drivers entering have the right of way","Stop and wait until the roundabout is empty","Enter by turning left"]},
+{q:"When approaching a curve, when do you slow down?",a:"Before the curve",w:["In the middle of the curve","After the curve","Brake hard while turning"]},
+{q:"What is the best practice when a driver is being pulled over by the police?",a:"Stay calm, keep your hands visible, and do what the officer asks",w:["Get out and walk to the officer's car","Reach under the seat for your papers right away","Argue the ticket at the roadside"]},
+{q:"What is the minimum following distance a driver should maintain from other vehicles?",a:"3 seconds",w:["1 second","2 car lengths","10 seconds"]},
+{q:"Know the penalty for driving 20 mph over the speed limit.",a:"5 points and possible license suspension",w:["2 points and a warning","A fine only, no points","12 points and automatic jail time"]},
+{q:"If you run off the pavement, you should not brake hard. What should you do?",a:"Take your foot off the gas pedal and grip the steering wheel tightly",w:["Brake hard right away","Jerk the wheel back onto the road","Speed up to get back on the road"]},
+{q:"Should you increase or decrease your following distance in bad weather?",a:"Increase",w:["Decrease","Keep it the same","Follow closer so you can see their lights"]},
+{q:"After you pass a car, when do you know it is safe to pull back into the lane?",a:"When you are clear of the other vehicle",w:["As soon as your front bumper passes theirs","When the other driver honks","After counting to one"],why:"A good check: you can see the whole car you passed in your rearview mirror."},
+{q:"A flashing red light should be treated like a…",a:"Stop sign",w:["Yield sign","Green light","Speed bump"]},
+{q:"If you are pulled over, what 3 documents will you be asked to provide?",a:"Registration, license, and insurance card",w:["Birth certificate, license, and report card","Social Security card, registration, and title","Passport, license, and car title"]},
+{q:"The best way to check your blind spot when making a lane change is to…",a:"Look over your shoulder",w:["Use the rearview mirror only","Use the side mirror only","Honk and then change lanes"]},
+{q:"What should you do if you hit a parked car and can't find the owner?",a:"Leave a note with your contact information and the date and time of the accident",w:["Drive away if the damage is small","Wait 5 minutes, then leave","Leave a note with only your first name"]},
+{q:"Know the proper path to make a left turn: one-way street onto a one-way street (diagram)",a:"Start in the far-left lane and turn into the far-left lane",w:["Start in the right lane and turn into the left lane","Start in the left lane and swing wide into the far-right lane","Turn into whichever lane is open"],d:"one"},
+{q:"Know the proper path to make a left turn: one-way street onto a two-way street (diagram)",a:"Start in the far-left lane and turn into the lane just right of the center line",w:["Turn into the lane left of the center line","Start in the right lane and cut across into the far-right lane","Turn into any lane, as long as you signal"],d:"two"},
+{q:"What is the meaning of a light that is a red round disk and a green arrow?",a:"Turns are allowed with caution in the direction of the arrow; through traffic is stopped; turns the other way are allowed unless a sign says otherwise",w:["Everyone may go straight","All traffic must stop, including turns","Only U-turns are allowed"]},
+{q:"What is the meaning of a light that is a yellow round disk?",a:"Prepare to stop, but if too close to the intersection, proceed with caution",w:["Speed up to beat the red light","Stop immediately no matter how close you are","Same as green"]},
+{q:"What is the meaning of a light that is a solid yellow arrow and a green round disk?",a:"Cars turning in the arrow's direction prepare to stop (if too close, turn with caution); through traffic and turns the other way proceed with caution",w:["Everyone must stop","Cars turning in the arrow's direction now have the right of way","Through traffic must stop; only turning cars may go"]},
+{q:"What is the meaning of a light that is a green round disk?",a:"Proceed with caution",w:["Stop","Prepare to stop","Turning traffic only"]},
+{q:"Which sign is red and white and an upside-down triangle?",a:"Yield",w:["Stop","No passing","Railroad crossing"]},
+{q:"Which sign is red and white and an octagon?",a:"Stop",w:["Yield","Do not enter","Wrong way"]},
+{q:"Which sign is a crossbuck (X shape), white and black?",a:"Railroad crossing",w:["Intersection ahead","Hospital","No parking"]},
+{q:"Which sign is a shield with blue, red, and white?",a:"Interstate",w:["U.S. route","State route","Hospital"]},
+{q:"If two cars arrive at a stop sign at the same time, which car has the right of way?",a:"The car to the right",w:["The car to the left","The bigger vehicle","The car that honks first"]},
+{q:"If two cars are at the intersection, does the turning vehicle or the vehicle going straight have the right of way?",a:"The turning vehicle",w:["Neither; both must wait","Whichever car is bigger","Whichever car honks first"],why:"This is the answer on your class set. The next card says the car going straight has the right of way at a green light, so ask your teacher if this one comes up."},
+{q:"At a green light, would a car going straight or a car that is turning have the right of way?",a:"The car going straight",w:["The car that is turning","Whoever got there first","The bigger vehicle"]},
+{q:"True or false: when a car is merging onto the road, you should, if possible, change lanes to the left to clear the way.",a:"True",w:["False","False, unless the merging car honks","Only for trucks"]},
+{q:"What are the steps to make a proper lane change?",a:"Signal, check the side mirror, check the rearview mirror, check your blind spot, then change lanes",w:["Change lanes, then signal","Check the rearview mirror and change lanes without signaling","Honk, speed up, and change lanes"]},
+{q:"What do you do to follow the Move Over law?",a:"For an approaching emergency vehicle, move to the far right (or out of the way). When passing stopped emergency, DelDOT, utility, or construction workers, move over a lane away from them",w:["Stop in your lane until every emergency vehicle leaves","Speed up so you pass stopped crews quickly","Flash your high beams to warn road crews"]},
+{q:"What is the proper procedure to use a shared center lane?",a:"Signal left, enter the lane when safe, and make the left turn when it is safe",w:["Use it as a passing lane","Drive in it for a mile before turning","Enter it without signaling"]},
+{q:"What is the color of regulatory signs?",a:"White and black",w:["Yellow and black","Orange and black","Green and white"]},
+{q:"What is the color of warning signs?",a:"Yellow and black",w:["White and black","Orange and black","Brown and white"]},
+{q:"What is the color of construction signs?",a:"Orange and black",w:["Yellow and black","Red and white","Blue and white"]},
+{q:"What is the color of guide signs?",a:"Green",w:["Blue","Brown","Orange"]},
+{q:"What is the color of recreation signs?",a:"Brown",w:["Green","Blue","Yellow"]},
+{q:"What is the color of service signs?",a:"Blue",w:["Green","Brown","White"]}
+];
+function turnSVG(kind) {
+  const two = kind === 'two';
+  const dash = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-width="2" stroke-dasharray="8 7"/>`;
+  const yel = (x1, x2) => `<line x1="${x1}" y1="107" x2="${x2}" y2="107" stroke="#F5C400" stroke-width="2"/><line x1="${x1}" y1="113" x2="${x2}" y2="113" stroke="#F5C400" stroke-width="2"/>`;
+  const ar = (x, y, t) => `<text x="${x}" y="${y}" text-anchor="middle" font-size="15" font-weight="700" fill="#fff" font-family="Arial, sans-serif">${t}</text>`;
+  return `<svg viewBox="0 0 220 220" role="img" aria-label="Left turn from a one-way street onto a ${two ? 'two-way' : 'one-way'} street">
+    <defs><marker id="ah-${kind}" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="t-head"/></marker></defs>
+    <rect width="220" height="220" class="t-ground"/>
+    <rect x="80" width="60" height="220" fill="#555b60"/>
+    <rect y="80" width="220" height="60" fill="#555b60"/>
+    ${dash(110, 0, 110, 80)}${dash(110, 140, 110, 220)}
+    ${two ? yel(0, 80) + yel(140, 220) : dash(0, 110, 80, 110) + dash(140, 110, 220, 110)}
+    ${ar(125, 185, '↑')}${ar(125, 40, '↑')}${ar(95, 40, '↑')}
+    ${two ? ar(35, 100, '←') + ar(185, 100, '←') + ar(35, 131, '→') + ar(185, 131, '→') : ar(35, 100, '←') + ar(35, 131, '←') + ar(185, 100, '←') + ar(185, 131, '←')}
+    <path d="${two ? 'M95 200 L95 140 Q95 95 50 95 L14 95' : 'M95 200 L95 150 Q95 125 70 125 L14 125'}" fill="none" class="t-path" stroke-width="4" stroke-linecap="round" marker-end="url(#ah-${kind})"/>
+    <rect x="88" y="196" width="14" height="22" rx="3" class="t-car"/>
+  </svg>
+  <p class="turn-cap">${two ? '<b>One-way → two-way:</b> start in the far-left lane, end in the lane just right of the yellow center line.' : '<b>One-way → one-way:</b> start in the far-left lane, end in the far-left lane. Also the only left turn allowed on red.'}</p>`;
+}
+
 /* ================= state ================= */
 const V = { mode: store.get('cram.vmode', 'list'), unit: 'all', q: '', known: new Set(store.get('cram.known', [])) };
-const D = { mode: store.get('cram.dmode', 'cards'), src: 'dmv', known: new Set(store.get('cram.dknown', [])), qz: store.get('cram.quizlet', []) };
+const D = { mode: store.get('cram.dmode', 'cards'), src: 'class', known: new Set(store.get('cram.dknown', [])), qz: store.get('cram.quizlet', []) };
 const M = { topic: store.get('cram.mtopic', 'constant') };
 
 /* ================= tabs ================= */
@@ -760,20 +844,19 @@ function renderVocabQuizSetup(body, pool) {
 }
 
 /* ================= driver's ed ================= */
+function dSet() {
+  const cls = CLASS.map((c, i) => ({ ...c, id: 'c' + i, n: i + 1 }));
+  const ext = DRIVERS.map((c, i) => ({ ...c, id: 'd' + i }));
+  return D.src === 'extra' ? ext : D.src === 'all' ? [...cls, ...ext] : cls;
+}
+const dExtra = c => (c.why ? `<p class="why">${esc(c.why)}</p>` : '') + (c.d ? `<div class="turn">${turnSVG(c.d)}</div>` : '');
 function dItems() {
-  if (D.src === 'mine' && D.qz.length) return D.qz.map((c, i) => ({ id: 'q:' + c.t.slice(0, 40), front: `<p class="fc-q">${esc(c.t)}</p>`, back: `<p class="ans">${esc(c.d)}</p>` }));
-  return DRIVERS.map((c, i) => ({ id: 'd' + i, front: `<p class="fc-q">${esc(c.q)}</p>`, back: `<p class="ans">${esc(c.a)}</p><p class="why">${esc(c.why)}</p>` }));
+  return dSet().map(c => ({ id: c.id, front: `${c.n ? `<span class="cardno">Class card ${c.n}</span>` : '<span class="cardno">Extra practice</span>'}<p class="fc-q">${esc(c.q)}</p>`, back: `<p class="ans">${esc(c.a)}</p>${dExtra(c)}` }));
 }
 function dQuestions() {
-  if (D.src === 'mine' && D.qz.length >= 4) {
-    return shuffle(D.qz).map(c => {
-      const wr = shuffle(D.qz.filter(x => x.d !== c.d)).slice(0, 3).map(x => esc(x.d));
-      return mc(`<p class="q-label">Your Quizlet cards</p><p class="q-big">${esc(c.t)}</p>`, esc(c.d), wr, '');
-    });
-  }
-  return shuffle(DRIVERS).map(c => mc(`<p class="q-label">Delaware driver's ed</p><p class="q-big">${esc(c.q)}</p>`, esc(c.a), c.w.map(esc), esc(c.why)));
+  return shuffle(dSet()).map(c => mc(`<p class="q-label">${c.n ? 'Class review · card ' + c.n : 'Extra practice'}</p><p class="q-big">${esc(c.q)}</p>`, esc(c.a), c.w.map(esc), dExtra(c)));
 }
-function updateDMeta() { $('#d-meta').textContent = D.qz.length ? `${DRIVERS.length} questions + ${D.qz.length} of yours` : `${DRIVERS.length} questions · Delaware`; }
+function updateDMeta() { $('#d-meta').textContent = `${CLASS.length} class cards + ${DRIVERS.length} extra`; }
 $('#d-mode').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { D.mode = b.dataset.v; store.set('cram.dmode', D.mode); renderDrivers(); } });
 $('#d-src').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { D.src = b.dataset.v; renderDrivers(); } });
 
@@ -792,8 +875,9 @@ function signSVG(kind) {
 }
 function cheatSheet() {
   const nums = [
-    ['0.08%', 'BAC limit, 21 and older'], ['0.02%', 'BAC limit, under 21'], ['1 year', 'License revoked for a first test refusal'],
-    ['2+ sec', 'Minimum following distance (more in bad weather)'], ['300 ft', 'Signal before turning'],
+    ['0.08%', 'BAC limit, 21 and older'], ['0.02%', 'BAC limit, under 21'], ['30 days', 'License revoked: under 21 drinking or possessing alcohol'],
+    ['1 DUI', 'Enough to require an ignition interlock device'], ['5 pts', '20 mph over the limit (plus possible suspension)'],
+    ['3 sec', 'Minimum following distance (more in bad weather)'], ['300 ft', 'Signal before turning'],
     ['500 ft', 'Dim high beams for oncoming cars'], ['200 ft', 'Dim high beams when following'], ['1,000 ft', 'Lights on if you can\'t see this far'],
     ['100 ft', 'No passing near intersections, bridges, RR crossings'], ['15–50 ft', 'Where to stop at a railroad crossing']
   ];
@@ -804,6 +888,7 @@ function cheatSheet() {
   const colors = [['#C8102E', 'Red', 'Stop, yield, prohibited'], ['#F5C400', 'Yellow', 'General warning'], ['#F28C00', 'Orange', 'Construction'], ['#C7E81E', 'Yellow-green', 'School, pedestrians'], ['#1E7B3A', 'Green', 'Directions, guide'], ['#1F4FA3', 'Blue', 'Motorist services'], ['#7A4A24', 'Brown', 'Recreation, parks'], ['#FFFFFF', 'White', 'Regulatory (speed limit)']];
   return `<div class="sheet">
     <div class="card"><h3>By the numbers</h3>${dl(nums)}</div>
+    <div class="card"><h3>Left-turn diagrams</h3><div class="turns"><div class="turn">${turnSVG('one')}</div><div class="turn">${turnSVG('two')}</div></div></div>
     <div class="card"><h3>No parking within…</h3>${dl(park)}<h3 style="margin-top:20px">Delaware speed limits</h3>${dl(speed)}</div>
     <div class="card"><h3>Sign shapes</h3><div class="signs">${signs.map(([k, s, m]) => `<div class="sign">${signSVG(k)}<span><b>${s}</b>${m}</span></div>`).join('')}</div></div>
     <div class="card"><h3>Sign colors</h3><div class="swatches">${colors.map(([c, n, m]) => `<div class="sw"><i style="background:${c}"></i><span><b>${n}</b><br><span class="muted">${m}</span></span></div>`).join('')}</div></div>
@@ -819,7 +904,7 @@ function cheatSheet() {
       <li><b>Uncontrolled intersection:</b> yield to the car on your right.</li>
       <li><b>Four-way stop:</b> first to stop goes first; ties go to the right.</li>
       <li><b>Left turn:</b> yield to oncoming traffic.</li>
-      <li><b>School bus red lights:</b> both directions stop, unless there's a median.</li>
+      <li><b>School bus red lights:</b> both directions stop, unless you're across a 4+ lane highway with a median.</li>
       <li><b>Flashing red</b> = stop sign. <b>Flashing yellow</b> = caution.</li>
       <li><b>Yellow lines</b> separate opposite directions. <b>White lines</b> separate the same direction.</li>
       <li><b>Bikes:</b> change lanes or give at least 3 feet.</li>
@@ -868,32 +953,25 @@ function renderImport(body) {
   }
 }
 function renderDrivers() {
+  if (!['cards', 'test', 'sheet'].includes(D.mode)) D.mode = 'cards';
   setPressed($('#d-mode'), D.mode);
   const src = $('#d-src');
-  if (D.qz.length && (D.mode === 'cards' || D.mode === 'test')) {
-    src.hidden = false;
-    src.innerHTML = `<button class="chip" data-v="dmv">Delaware set (${DRIVERS.length})</button><button class="chip" data-v="mine">My Quizlet cards (${D.qz.length})</button>`;
-    setPressed(src, D.src);
-  } else { src.hidden = true; if (!D.qz.length) D.src = 'dmv'; }
+  src.hidden = D.mode === 'sheet';
+  src.innerHTML = `<button class="chip" data-v="class">Class review (${CLASS.length})</button><button class="chip" data-v="extra">Extra practice (${DRIVERS.length})</button><button class="chip" data-v="all">Everything (${CLASS.length + DRIVERS.length})</button>`;
+  setPressed(src, D.src);
   const body = $('#d-body'); keyHandlers.drivers = null;
-  const banner = !D.qz.length && D.mode !== 'import' ? `<div class="note-banner" style="margin-bottom:16px"><p>These questions come from the Delaware Driver Manual, because Quizlet doesn't let outside sites read its sets. To study your exact Quizlet cards too, paste them in.</p><button class="btn" data-go="import">Add my cards</button></div>` : '';
-  if (D.mode === 'sheet') { body.innerHTML = banner + cheatSheet(); }
-  else if (D.mode === 'import') { renderImport(body); }
-  else {
-    body.innerHTML = banner + '<div id="d-area"></div>';
-    const area = $('#d-area');
-    if (D.mode === 'cards') {
-      Flashcards(area, dItems(), 'drivers', {
-        swapLabel: 'Answer first',
-        isKnown: id => D.known.has(id),
-        setKnown: (id, y) => { if (y) D.known.add(id); else D.known.delete(id); store.set('cram.dknown', [...D.known]); }
-      });
-    } else {
-      if (D.src === 'mine' && D.qz.length < 4) { area.innerHTML = `<div class="card empty">You need at least 4 cards for a multiple-choice test. Use flashcards for now.</div>`; }
-      else Quiz(area, () => dQuestions().slice(0, 25), 'drivers');
-    }
+  if (D.mode === 'sheet') { body.innerHTML = cheatSheet(); return; }
+  body.innerHTML = '<div id="d-area"></div>';
+  const area = $('#d-area');
+  if (D.mode === 'cards') {
+    Flashcards(area, dItems(), 'drivers', {
+      swapLabel: 'Answer first',
+      isKnown: id => D.known.has(id),
+      setKnown: (id, y) => { if (y) D.known.add(id); else D.known.delete(id); store.set('cram.dknown', [...D.known]); }
+    });
+  } else {
+    Quiz(area, dQuestions, 'drivers');
   }
-  const go = $('[data-go]', body); if (go) go.onclick = () => { D.mode = 'import'; renderDrivers(); };
 }
 
 /* ================= math ================= */
