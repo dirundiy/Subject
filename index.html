@@ -1,0 +1,1006 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>[hidden]{display:none!important} body{margin:0} img{max-width:100%}</style>
+</head>
+<body>
+<title>The Cram Desk</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Figtree:wght@400;500;600;700&family=Young+Serif&display=swap">
+<style>
+/* Layout: a study desk. Brand + three subject tabs on top, then one working surface per subject. Each subject owns an accent ink. */
+:root{
+  --bg:#ECEFE7; --surface:#FAFBF7; --surface-2:#F1F4EC; --ink:#1B241F; --muted:#59665D; --line:#D2D9CD;
+  --vocab:#8C3A63; --drive:#A35F00; --math:#126E6C;
+  --good:#2B7845; --bad:#AE3535; --good-soft:#E1F0E5; --bad-soft:#F8E3E1;
+  --accent:var(--vocab);
+  --display:"Young Serif", Georgia, "Times New Roman", serif;
+  --body:"Figtree", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"DM Mono", ui-monospace, Consolas, monospace;
+  --r:14px;
+  --shadow:0 1px 2px rgb(20 30 24 / .06), 0 10px 28px -14px rgb(20 30 24 / .22);
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#121814; --surface:#1A221D; --surface-2:#202a24; --ink:#E6ECE4; --muted:#9BA89E; --line:#2E3933;
+  --vocab:#E79BC0; --drive:#F0B04A; --math:#5CCBC5;
+  --good:#71C98E; --bad:#F08A84; --good-soft:#1E3426; --bad-soft:#3A2220;
+  --shadow:0 1px 2px rgb(0 0 0 / .3), 0 10px 28px -14px rgb(0 0 0 / .6);
+  color-scheme:dark;
+}}
+:root[data-theme="dark"]{
+  --bg:#121814; --surface:#1A221D; --surface-2:#202a24; --ink:#E6ECE4; --muted:#9BA89E; --line:#2E3933;
+  --vocab:#E79BC0; --drive:#F0B04A; --math:#5CCBC5;
+  --good:#71C98E; --bad:#F08A84; --good-soft:#1E3426; --bad-soft:#3A2220;
+  --shadow:0 1px 2px rgb(0 0 0 / .3), 0 10px 28px -14px rgb(0 0 0 / .6);
+  color-scheme:dark;
+}
+body{
+  --accent:var(--vocab);
+  --accent-soft:color-mix(in srgb, var(--accent) 13%, var(--surface));
+  --accent-line:color-mix(in srgb, var(--accent) 35%, var(--line));
+  background:radial-gradient(900px 420px at 12% -8%, var(--accent-soft), transparent 70%), var(--bg);
+  background-attachment:fixed;
+  color:var(--ink); font-family:var(--body); font-size:16px; line-height:1.55;
+  min-height:100vh;
+}
+body[data-tab="drivers"]{--accent:var(--drive)}
+body[data-tab="math"]{--accent:var(--math)}
+*{box-sizing:border-box}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2.5px solid var(--accent);outline-offset:2px}
+
+.wrap{max-width:1100px;margin:0 auto;padding-left:max(16px, env(safe-area-inset-left, 0px));padding-right:max(16px, env(safe-area-inset-right, 0px));padding-block:28px 64px}
+
+/* ---------- header ---------- */
+.top{display:flex;flex-direction:column;gap:22px;margin-bottom:26px}
+.brand{display:flex;flex-wrap:wrap;align-items:baseline;justify-content:space-between;gap:8px 20px}
+.brand h1{font-family:var(--display);font-weight:400;font-size:clamp(2rem,5vw,2.9rem);line-height:1.05;margin:0;letter-spacing:-.01em}
+.brand h1 i{font-style:normal;color:var(--accent);transition:color .3s}
+.brand p{margin:0;color:var(--muted);font-size:.95rem}
+.tabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+.tab{--c:var(--vocab);text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:var(--r);padding:14px 16px;display:flex;flex-direction:column;gap:2px;transition:border-color .2s, transform .2s, background .2s;position:relative;overflow:hidden}
+.tab[data-tab="drivers"]{--c:var(--drive)} .tab[data-tab="math"]{--c:var(--math)}
+.tab::before{content:"";position:absolute;inset:0 auto 0 0;width:4px;background:var(--c);opacity:.35;transition:opacity .2s, width .25s}
+.tab:hover{border-color:color-mix(in srgb, var(--c) 45%, var(--line))}
+.tab[aria-selected="true"]{border-color:var(--c);background:color-mix(in srgb, var(--c) 10%, var(--surface));box-shadow:var(--shadow)}
+.tab[aria-selected="true"]::before{opacity:1;width:6px}
+.tab .t-name{font-family:var(--display);font-size:1.2rem;line-height:1.2;color:var(--ink)}
+.tab .t-meta{font-size:.8rem;color:var(--muted);letter-spacing:.02em}
+@media (max-width:560px){.tab{padding:11px 12px}.tab .t-name{font-size:1rem}.tab .t-meta{font-size:.72rem}}
+
+/* ---------- shared controls ---------- */
+.panel{display:flex;flex-direction:column;gap:18px}
+.toolbar{display:flex;flex-wrap:wrap;gap:12px 18px;align-items:center;justify-content:space-between}
+.seg{display:inline-flex;flex-wrap:wrap;gap:4px;padding:4px;border-radius:12px;background:var(--surface-2);border:1px solid var(--line)}
+.seg button{border:0;background:transparent;padding:7px 14px;border-radius:9px;font-weight:600;font-size:.9rem;color:var(--muted)}
+.seg button:hover{color:var(--ink)}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--accent);box-shadow:0 1px 3px rgb(0 0 0 / .1)}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:5px 13px;font-size:.86rem;font-weight:500;color:var(--muted)}
+.chip:hover{border-color:var(--accent-line);color:var(--ink)}
+.chip[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--ink)}
+.btn{border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:9px 16px;font-weight:600;font-size:.92rem;transition:border-color .15s, background .15s, transform .1s}
+.btn:hover{border-color:var(--accent-line)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.primary:hover{filter:brightness(1.07)}
+.btn.good{border-color:color-mix(in srgb,var(--good) 45%,var(--line));color:var(--good)}
+.btn.bad{border-color:color-mix(in srgb,var(--bad) 45%,var(--line));color:var(--bad)}
+.btn.ghost{border-color:transparent;background:transparent;color:var(--muted);padding:6px 10px}
+.btn.ghost:hover{color:var(--ink);background:var(--surface-2)}
+.btn.ghost[aria-pressed="true"]{color:var(--accent);background:var(--accent-soft)}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:22px;box-shadow:var(--shadow)}
+.eyebrow{font-size:.74rem;text-transform:uppercase;letter-spacing:.12em;font-weight:700;color:var(--accent);margin:0}
+.muted{color:var(--muted)}
+.bar{height:6px;border-radius:99px;background:var(--surface-2);border:1px solid var(--line);overflow:hidden}
+.bar span{display:block;height:100%;background:var(--accent);border-radius:99px;transition:width .35s ease}
+.progress-line{display:flex;align-items:center;gap:14px;font-size:.9rem;color:var(--muted)}
+.progress-line .bar{flex:1;max-width:340px}
+.progress-line b{color:var(--ink);font-variant-numeric:tabular-nums}
+kbd{font-family:var(--mono);font-size:.75rem;border:1px solid var(--line);border-bottom-width:2px;border-radius:5px;padding:0 5px;background:var(--surface-2);color:var(--muted)}
+.note-banner{display:flex;gap:12px;align-items:flex-start;background:var(--accent-soft);border:1px solid var(--accent-line);border-radius:12px;padding:12px 16px;font-size:.92rem}
+.note-banner p{margin:0}
+.note-banner button{flex:none}
+
+/* ---------- vocab list ---------- */
+.search input{width:100%;max-width:420px;border:1.5px solid var(--line);background:var(--surface);border-radius:10px;padding:10px 14px;font:inherit;color:var(--ink)}
+.search input:focus{outline:none;border-color:var(--accent)}
+.wordgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:12px}
+.word{background:var(--surface);border:1px solid var(--line);border-radius:var(--r);padding:16px 18px 14px;display:flex;flex-direction:column;gap:8px;min-width:0;transition:border-color .2s, opacity .2s}
+.word header{display:flex;flex-wrap:wrap;align-items:baseline;gap:4px 10px}
+.word h3{font-family:var(--display);font-weight:400;font-size:1.35rem;margin:0;line-height:1.2}
+.pos{font-style:italic;color:var(--accent);font-size:.88rem}
+.unit{margin-left:auto;font-size:.72rem;font-weight:600;letter-spacing:.04em;color:var(--muted);border:1px solid var(--line);border-radius:99px;padding:1px 8px}
+.word .def{margin:0;font-size:.98rem}
+.word .ex{margin:0;color:var(--muted);font-size:.9rem;font-style:italic}
+.word .ex b, .fc-back .ex b{font-style:normal;color:var(--ink);font-weight:600;background:var(--accent-soft);padding:0 3px;border-radius:4px}
+.word .syn{margin:0;font-size:.82rem;color:var(--muted)}
+.word .syn span{color:var(--ink)}
+.word .tip{margin:0;font-size:.83rem;border-left:3px solid var(--accent-line);padding-left:9px;color:var(--muted)}
+.know{align-self:flex-start;margin-top:auto;border:1.5px solid var(--line);background:transparent;border-radius:99px;padding:4px 12px;font-size:.8rem;font-weight:600;color:var(--muted)}
+.know:hover{border-color:var(--good);color:var(--good)}
+.word.is-known{border-color:color-mix(in srgb,var(--good) 40%,var(--line))}
+.word.is-known .know{background:var(--good-soft);border-color:var(--good);color:var(--good)}
+.empty{padding:40px 20px;text-align:center;color:var(--muted)}
+
+/* ---------- flashcards ---------- */
+.fc{display:flex;flex-direction:column;gap:14px;max-width:760px;width:100%;margin:0 auto}
+.fc-meta{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px}
+.fc-count{font-family:var(--mono);font-size:.9rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.fc-tools{display:flex;flex-wrap:wrap;gap:4px}
+.fc-card{perspective:1400px;cursor:pointer;outline:none;border-radius:20px}
+.fc-card:focus-visible{outline:2.5px solid var(--accent);outline-offset:4px}
+.fc-inner{display:grid;transition:transform .5s cubic-bezier(.3,.7,.3,1);transform-style:preserve-3d}
+.fc-card.instant .fc-inner{transition:none}
+.fc-card.flipped .fc-inner{transform:rotateY(180deg)}
+.fc-face{grid-area:1/1;backface-visibility:hidden;-webkit-backface-visibility:hidden;min-height:300px;border-radius:20px;border:1px solid var(--line);background:var(--surface);box-shadow:var(--shadow);padding:34px 30px;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:12px;min-width:0;overflow-wrap:anywhere}
+.fc-back{transform:rotateY(180deg);background:linear-gradient(var(--accent-soft),var(--surface) 70%)}
+.fc-face .label{position:absolute;top:14px;left:18px;font-size:.7rem;text-transform:uppercase;letter-spacing:.14em;font-weight:700;color:var(--muted)}
+.fc-face{position:relative}
+.fc-word{font-family:var(--display);font-size:clamp(2rem,6vw,3.1rem);line-height:1.1;margin:0}
+.fc-pos{font-style:italic;color:var(--accent)}
+.fc-def{font-size:clamp(1.05rem,2.6vw,1.3rem);margin:0;max-width:52ch}
+.fc-q{font-size:clamp(1.1rem,2.8vw,1.4rem);margin:0;max-width:44ch;font-weight:500}
+.fc-back .ex{color:var(--muted);font-style:italic;margin:0;max-width:56ch}
+.fc-back .ans{font-family:var(--display);font-size:clamp(1.3rem,3.4vw,1.75rem);margin:0;line-height:1.25}
+.fc-back .why{margin:0;color:var(--muted);max-width:54ch;font-size:.98rem}
+.fc-hint{text-align:center;font-size:.82rem;color:var(--muted);margin:0}
+.fc-actions{display:grid;grid-template-columns:auto 1fr 1fr auto;gap:8px}
+.fc-status{font-size:.78rem;font-weight:700;color:var(--good);letter-spacing:.04em;position:absolute;top:13px;right:18px}
+@media (max-width:520px){.fc-actions{grid-template-columns:1fr 1fr}.fc-actions [data-act=prev]{order:3}.fc-actions [data-act=next]{order:4}.fc-face{min-height:260px;padding:30px 18px}}
+
+/* ---------- quiz ---------- */
+.qz{display:flex;flex-direction:column;gap:16px;max-width:760px;width:100%;margin:0 auto}
+.qz-top{display:flex;justify-content:space-between;font-size:.88rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.qz-prompt{background:var(--surface);border:1px solid var(--line);border-radius:18px;padding:26px 26px;box-shadow:var(--shadow)}
+.qz-prompt p{margin:0}
+.q-label{font-size:.78rem;text-transform:uppercase;letter-spacing:.12em;font-weight:700;color:var(--accent);margin-bottom:10px!important}
+.q-big{font-size:clamp(1.1rem,2.6vw,1.3rem)}
+.q-word{font-family:var(--display);font-size:clamp(1.8rem,5vw,2.4rem);line-height:1.15}
+.q-word em{font-family:var(--body);font-size:1rem;color:var(--accent)}
+.q-math{font-size:clamp(1.3rem,4vw,1.8rem);text-align:center;padding:10px 0 4px}
+.gap{display:inline-block;min-width:5em;border-bottom:2px solid var(--accent);height:1.1em;vertical-align:-.15em}
+.qz-choices{display:grid;gap:8px}
+.choice{display:flex;gap:12px;align-items:center;text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:12px 16px;font-size:1rem;transition:border-color .15s, background .15s}
+.choice:hover:not(:disabled){border-color:var(--accent);background:var(--accent-soft)}
+.choice:disabled{cursor:default}
+.choice span{min-width:0;flex:1}
+.choice.right{border-color:var(--good);background:var(--good-soft)}
+.choice.wrong{border-color:var(--bad);background:var(--bad-soft)}
+.choice.right kbd{border-color:var(--good);color:var(--good)} .choice.wrong kbd{border-color:var(--bad);color:var(--bad)}
+.qz-feedback{border-radius:12px;padding:14px 16px;font-size:.95rem;border:1px solid}
+.qz-feedback.ok{background:var(--good-soft);border-color:color-mix(in srgb,var(--good) 40%,transparent)}
+.qz-feedback.no{background:var(--bad-soft);border-color:color-mix(in srgb,var(--bad) 40%,transparent)}
+.qz-feedback strong{display:block;margin-bottom:4px}
+.qz-feedback.ok strong{color:var(--good)} .qz-feedback.no strong{color:var(--bad)}
+.qz-feedback ol{margin:6px 0 0;padding-left:1.3em;display:grid;gap:4px}
+.qz-next{display:flex;justify-content:flex-end}
+.done{text-align:center;align-items:center}
+.big-score{font-family:var(--display);font-size:4.5rem;line-height:1;margin:6px 0 0;color:var(--accent)}
+.big-score span{font-size:2rem;color:var(--muted)}
+.row{display:flex;flex-wrap:wrap;gap:8px;justify-content:center}
+.review{text-align:left;display:grid;gap:10px;padding-left:1.4em;margin:0;width:100%}
+.review li{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;font-size:.93rem}
+.review ol{padding-left:1.2em;margin:6px 0 0}
+.setup{display:flex;flex-direction:column;gap:18px;max-width:760px;width:100%;margin:0 auto}
+.setup h3{font-family:var(--display);font-weight:400;font-size:1.5rem;margin:0}
+.field{display:flex;flex-direction:column;gap:7px}
+.field > span{font-size:.8rem;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.backlink{align-self:flex-start}
+
+/* ---------- drivers ---------- */
+.sheet{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,330px),1fr));gap:14px}
+.sheet .card h3{font-family:var(--display);font-weight:400;font-size:1.3rem;margin:0 0 12px}
+.nums{display:grid;gap:0;margin:0}
+.nums div{display:grid;grid-template-columns:7.2em 1fr;gap:12px;padding:8px 0;border-top:1px dashed var(--line);align-items:baseline}
+.nums div:first-child{border-top:0}
+.nums dt{font-family:var(--mono);font-weight:500;color:var(--accent);font-variant-numeric:tabular-nums}
+.nums dd{margin:0;font-size:.93rem}
+.signs{display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:12px}
+.sign{display:flex;gap:10px;align-items:center;font-size:.86rem;line-height:1.3}
+.sign svg{flex:none;width:46px;height:46px}
+.sign b{display:block;font-size:.88rem}
+.swatches{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:8px}
+.sw{display:flex;gap:9px;align-items:center;font-size:.86rem;line-height:1.25}
+.sw i{flex:none;width:22px;height:22px;border-radius:6px;border:1px solid rgb(0 0 0 / .2)}
+.list{margin:0;padding-left:1.15em;display:grid;gap:7px;font-size:.93rem}
+.list b{color:var(--ink)}
+textarea{width:100%;min-height:200px;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:12px;padding:12px 14px;font:inherit;font-family:var(--mono);font-size:.85rem;resize:vertical}
+textarea:focus{outline:none;border-color:var(--accent)}
+.steps{margin:0;padding-left:1.3em;display:grid;gap:6px}
+
+/* ---------- math ---------- */
+.mathgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,360px);gap:22px;align-items:start}
+@media (max-width:900px){.mathgrid{grid-template-columns:minmax(0,1fr)}}
+.topics{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:8px}
+.topic{text-align:left;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:10px 14px;display:flex;flex-direction:column;gap:1px}
+.topic b{font-size:.92rem}
+.topic small{font-family:var(--mono);color:var(--muted);font-size:.76rem}
+.topic:hover{border-color:var(--accent-line)}
+.topic[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft)}
+.m{font-family:var(--mono);font-weight:500;white-space:nowrap}
+.choice .m{font-size:1.08rem}
+.fr{display:inline-flex;flex-direction:column;align-items:center;vertical-align:-.62em;font-size:.8em;line-height:1.08;margin:0 .08em}
+.fr sup,.fr sub{font-size:1em;vertical-align:baseline;position:static;line-height:1.08}
+.fr sup{border-bottom:1.5px solid currentColor;padding:0 .18em .06em}
+.fr sub{padding-top:.06em}
+.fr .fs{display:none}
+.rad{border-top:1.5px solid currentColor;padding:0 .08em}
+.blank{display:inline-block;min-width:2.2em;border-bottom:2px solid var(--accent);color:var(--accent);text-align:center}
+.method{display:flex;flex-direction:column;gap:16px;position:sticky;top:16px}
+@media (max-width:900px){.method{position:static}}
+.method h3{font-family:var(--display);font-weight:400;font-size:1.35rem;margin:0}
+.method h4{margin:0;font-size:.78rem;letter-spacing:.1em;text-transform:uppercase;color:var(--accent)}
+.method p{margin:0;font-size:.93rem}
+.method .steps{font-size:.93rem}
+.ex-box{background:var(--surface-2);border:1px solid var(--line);border-radius:10px;padding:12px 14px;font-size:.9rem;display:grid;gap:4px;overflow-x:auto}
+.ex-box .m{font-size:.92rem}
+.area svg{width:100%;max-width:260px;display:block;margin:0 auto}
+.area .sq{fill:var(--accent-soft);stroke:var(--accent)}
+.area .rect{fill:var(--surface-2);stroke:var(--accent)}
+.area .gapsq{fill:var(--surface);stroke:var(--accent);stroke-dasharray:5 4}
+.area text{fill:var(--ink);font-family:var(--mono);font-size:13px}
+.area .lab{fill:var(--muted);font-size:12px}
+
+@media (prefers-reduced-motion: reduce){*{transition:none!important;animation:none!important}}
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div class="brand">
+      <h1>The Cram <i>Desk</i></h1>
+      <p>Vocab · Driver's Ed final · Completing the square</p>
+    </div>
+    <nav class="tabs" role="tablist" aria-label="Subjects">
+      <button class="tab" role="tab" data-tab="vocab" id="tab-vocab" aria-controls="p-vocab"><span class="t-name">Vocab</span><span class="t-meta">60 words · Quizzes 1–6</span></button>
+      <button class="tab" role="tab" data-tab="drivers" id="tab-drivers" aria-controls="p-drivers"><span class="t-name">Driver's Ed</span><span class="t-meta" id="d-meta">Delaware final review</span></button>
+      <button class="tab" role="tab" data-tab="math" id="tab-math" aria-controls="p-math"><span class="t-name">Math</span><span class="t-meta">HW 2.5 · Complete the square</span></button>
+    </nav>
+  </header>
+
+  <main>
+    <section class="panel" id="p-vocab" role="tabpanel" aria-labelledby="tab-vocab">
+      <div class="toolbar">
+        <div class="seg" id="v-mode">
+          <button data-v="list">Word list</button><button data-v="cards">Flashcards</button><button data-v="quiz">Quiz</button>
+        </div>
+        <div class="chips" id="v-unit"></div>
+      </div>
+      <div class="progress-line"><span><b id="v-known">0</b> of 60 marked “got it”</span><div class="bar"><span id="v-bar" style="width:0"></span></div></div>
+      <div id="v-body"></div>
+    </section>
+
+    <section class="panel" id="p-drivers" role="tabpanel" aria-labelledby="tab-drivers" hidden>
+      <div class="toolbar">
+        <div class="seg" id="d-mode">
+          <button data-v="cards">Flashcards</button><button data-v="test">Practice test</button><button data-v="sheet">Cheat sheet</button><button data-v="import">My Quizlet cards</button>
+        </div>
+        <div class="chips" id="d-src"></div>
+      </div>
+      <div id="d-body"></div>
+    </section>
+
+    <section class="panel" id="p-math" role="tabpanel" aria-labelledby="tab-math" hidden>
+      <div class="mathgrid">
+        <div class="panel">
+          <div class="topics" id="m-topics"></div>
+          <div id="m-body"></div>
+        </div>
+        <aside class="card method" aria-label="Method">
+          <div><p class="eyebrow">The method</p><h3>Completing the square</h3></div>
+          <p>A perfect square trinomial always looks like this:</p>
+          <div class="ex-box" style="text-align:center"><span class="m">x² + bx + (b/2)² = (x + b/2)²</span></div>
+          <div class="area">
+            <svg viewBox="0 0 230 220" role="img" aria-label="Area model: an x by x square, two rectangles of b over 2 times x, and a missing corner square of b over 2 squared">
+              <rect class="sq" x="20" y="24" width="130" height="130" rx="3"/>
+              <rect class="rect" x="150" y="24" width="56" height="130" rx="3"/>
+              <rect class="rect" x="20" y="154" width="130" height="56" rx="3"/>
+              <rect class="gapsq" x="150" y="154" width="56" height="56" rx="3"/>
+              <text x="85" y="94" text-anchor="middle">x²</text>
+              <text x="178" y="94" text-anchor="middle">(b/2)x</text>
+              <text x="85" y="187" text-anchor="middle">(b/2)x</text>
+              <text x="178" y="187" text-anchor="middle">(b/2)²</text>
+              <text class="lab" x="85" y="16" text-anchor="middle">x</text>
+              <text class="lab" x="178" y="16" text-anchor="middle">b/2</text>
+              <text class="lab" x="10" y="94" text-anchor="middle">x</text>
+              <text class="lab" x="10" y="187" text-anchor="middle">b/2</text>
+            </svg>
+          </div>
+          <p class="muted" style="font-size:.85rem">x² + bx is the square plus two strips. The dashed corner, (b/2)², is the piece you add to “complete” the square.</p>
+          <h4>Steps for x² + bx + c</h4>
+          <ol class="steps">
+            <li>Take <b>half of b</b>.</li>
+            <li><b>Square it.</b> That's the constant.</li>
+            <li><b>Add and subtract</b> it right after the bx term.</li>
+            <li>Factor the first three terms as <span class="m">(x + b/2)²</span> and combine the leftover numbers.</li>
+          </ol>
+          <h4>Even b</h4>
+          <div class="ex-box">
+            <span class="m">x² + 10x + 7</span>
+            <span>half of 10 = 5, 5² = 25</span>
+            <span class="m">x² + 10x + 25 − 25 + 7</span>
+            <span class="m">= (x + 5)² − 18</span>
+          </div>
+          <h4>Odd b</h4>
+          <div class="ex-box">
+            <span class="m">x² + 7x + 2</span>
+            <span>half of 7 = <span class="m"><span class="fr"><sup>7</sup><sub>2</sub></span></span>, squared = <span class="m"><span class="fr"><sup>49</sup><sub>4</sub></span></span></span>
+            <span class="m">x² + 7x + <span class="fr"><sup>49</sup><sub>4</sub></span> − <span class="fr"><sup>49</sup><sub>4</sub></span> + <span class="fr"><sup>8</sup><sub>4</sub></span></span>
+            <span class="m">= (x + <span class="fr"><sup>7</sup><sub>2</sub></span>)² − <span class="fr"><sup>41</sup><sub>4</sub></span></span>
+          </div>
+          <h4>Watch out</h4>
+          <ul class="list">
+            <li>The sign inside matches b: <span class="m">x² − 6x</span> → <span class="m">(x − 3)²</span>.</li>
+            <li>The constant <span class="m">(b/2)²</span> is always positive.</li>
+            <li>Odd b: keep fractions, skip decimals. Write c over 4 to combine (2 = 8/4).</li>
+            <li>You add <i>and</i> subtract, so the value doesn't change.</li>
+          </ul>
+        </aside>
+      </div>
+    </section>
+  </main>
+</div>
+
+<script>
+/* ================= helpers ================= */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => [...r.querySelectorAll(s)];
+const shuffle = a => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
+const store = {
+  get(k, d) { try { const v = localStorage.getItem(k); return v == null ? d : JSON.parse(v); } catch (e) { return d; } },
+  set(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+};
+const keyHandlers = {};
+let currentTab = 'vocab';
+document.addEventListener('keydown', e => {
+  if (e.target.closest && e.target.closest('input, textarea, select')) return;
+  if (e.metaKey || e.ctrlKey || e.altKey) return;
+  const fn = keyHandlers[currentTab]; if (fn) fn(e);
+});
+function setPressed(container, val) { $$('[data-v]', container).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.v === String(val)))); }
+function mc(prompt, correct, wrongs, explain) {
+  const seen = new Set([correct]); const w = [];
+  for (const x of wrongs) { if (x != null && !seen.has(x)) { seen.add(x); w.push(x); } if (w.length === 3) break; }
+  const choices = shuffle([correct, ...w]);
+  return { prompt, choices, answer: choices.indexOf(correct), explain };
+}
+
+/* ================= vocab data ================= */
+const UNITS = { 1: 'Quiz 1–2', 2: 'Quiz 3–4', 3: 'Quiz 5–6' };
+const VOCAB_RAW = {
+1: [
+["Ameliorate","verb","to make something bad or unsatisfactory better; to improve","Opening a second lunch line {ameliorated} the crowding in the cafeteria.","improve, ease, better"],
+["Approbation","noun","approval or praise, especially official approval","The plan finally won the {approbation} of the school board.","approval, praise, endorsement"],
+["Assuage","verb","to make an unpleasant feeling less intense; to satisfy a hunger or thirst","A sincere apology helped {assuage} her anger.","soothe, ease, relieve"],
+["Bombastic","adjective","using big, high-sounding words with little real meaning; pompous","The candidate's {bombastic} speech was full of big words and no actual plans.","pompous, grandiose, overblown"],
+["Elicit","verb","to draw out or bring forth a response, answer, or reaction","The teacher's pun {elicited} groans from the whole class.","draw out, evoke, provoke","Don't confuse with illicit, which means illegal."],
+["Epitome","noun","a perfect example of a quality or type","With color-coded notes for every class, Maya is the {epitome} of organization.","embodiment, model, essence","Pronounced ih-PIT-uh-mee."],
+["Exhort","verb","to strongly encourage or urge someone to do something","The coach {exhorted} the team to give everything in the final quarter.","urge, encourage, press"],
+["Expostulate","verb","to express strong disagreement; to reason earnestly with someone to change their mind","He {expostulated} with the referee for several minutes after the call.","protest, object, remonstrate","Close in meaning to remonstrate (Quiz 3–4)."],
+["Infringe","verb","to break a law or agreement; to intrude on someone's rights","Posting the song without permission {infringes} on the artist's copyright.","violate, encroach, breach"],
+["Ingratiate","verb","to try to win someone's favor, often through flattery","The new hire tried to {ingratiate} himself with the boss by laughing at every joke.","curry favor, flatter, suck up"],
+["Intercede","verb","to step in on behalf of someone else, especially to settle a dispute or ask for mercy","When the argument got heated, a friend {interceded} and calmed everyone down.","intervene, mediate, step in"],
+["Intrinsic","adjective","belonging naturally to something; essential","Curiosity is {intrinsic} to good science.","inherent, built-in, fundamental","Opposite: extrinsic (coming from outside)."],
+["Jaded","adjective","tired, bored, or no longer excited, usually from having too much of something","After ten amusement-park trips, she was {jaded} about roller coasters.","weary, bored, burned out"],
+["Permeate","verb","to spread through every part of something","The smell of popcorn {permeated} the whole theater.","pervade, saturate, fill"],
+["Precipitate","verb","to cause something (usually bad) to happen suddenly or sooner than expected","The scandal {precipitated} the mayor's resignation.","trigger, hasten, bring on","As an adjective it means hasty or rash."],
+["Simulate","verb","to imitate the appearance or conditions of something","The flight trainer {simulates} a thunderstorm so pilots can practice.","imitate, mimic, replicate"],
+["Stringent","adjective","strict, precise, and demanding","The lab has {stringent} safety rules: goggles on at all times.","strict, rigorous, tough"],
+["Surmise","verb","to guess or conclude something without strong evidence","From the empty pizza box, I {surmised} my brother had already eaten.","guess, infer, suppose"],
+["Transcend","verb","to go beyond the usual limits of something; to rise above","Great music can {transcend} language barriers.","surpass, exceed, rise above"],
+["Umbrage","noun","offense or annoyance, usually in the phrase “take umbrage”","She took {umbrage} at the suggestion that she had cheated.","offense, resentment, indignation"]
+],
+2: [
+["Abominate","verb","to hate intensely; to loathe","My grandfather {abominates} reality TV.","loathe, detest, despise"],
+["Acculturation","noun","the process of adopting the customs and culture of another group","The {acculturation} of immigrant families often happens fastest among the kids.","assimilation, adaptation, integration"],
+["Amorphous","adjective","having no clear shape, form, or structure","The group project stayed {amorphous} until someone finally made a plan.","shapeless, formless, vague"],
+["Ascribe","verb","to say something was caused by or belongs to a particular person or thing; to attribute","The coach {ascribed} the loss to poor defense.","attribute, credit, assign"],
+["Aura","noun","a distinctive feeling or quality that seems to surround a person or place","The old library had an {aura} of mystery.","atmosphere, air, vibe"],
+["Enjoin","verb","to order or strongly urge; in law, to forbid by court order","The judge {enjoined} the company from selling the product.","command, direct, prohibit","It can mean both “order to do” and “forbid.” Read the context."],
+["Expedite","verb","to speed up a process or make it happen sooner","Paying an extra fee will {expedite} your passport application.","hasten, accelerate, speed up"],
+["Gossamer","adjective","extremely light, thin, and delicate","The bride's veil was {gossamer}, almost like mist.","delicate, sheer, filmy","As a noun it's the fine film of a cobweb."],
+["Inadvertent","adjective","not done on purpose; unintentional","Hitting reply-all was an {inadvertent} mistake that the whole school saw.","accidental, unintentional, unplanned"],
+["Inscrutable","adjective","impossible to understand or read","His expression was {inscrutable}; no one could tell if he was angry.","mysterious, unreadable, enigmatic"],
+["Irrevocable","adjective","impossible to undo or change","Once you submit the form, your decision is {irrevocable}.","permanent, final, irreversible"],
+["Nominal","adjective","in name only; also, very small in amount (a nominal fee)","The club charges a {nominal} fee of one dollar.","token, minimal, so-called"],
+["Noncommittal","adjective","not showing an opinion or decision; avoiding taking a side","When asked about the curfew, Mom gave a {noncommittal} shrug.","evasive, neutral, guarded"],
+["Proclivity","noun","a natural tendency to do something, often something bad","My dog has a {proclivity} for chewing shoes.","tendency, inclination, leaning","Near-synonym of propensity; proclivity leans negative."],
+["Propensity","noun","an inclination or natural tendency to behave a certain way","Some people have a {propensity} to procrastinate.","tendency, inclination, disposition"],
+["Remonstrate","verb","to protest or object forcefully","Parents {remonstrated} with the principal about the new phone policy.","protest, object, expostulate"],
+["Repudiate","verb","to refuse to accept or be associated with; to reject","The senator {repudiated} the false statements made in her name.","reject, disown, renounce"],
+["Resilient","adjective","able to recover quickly from difficulty or spring back into shape","Kids are {resilient}; she bounced back from the move in a few weeks.","tough, hardy, adaptable"],
+["Reverberate","verb","to echo repeatedly; to have continuing effects","The drum line's beat {reverberated} through the gym.","echo, resound, ring"],
+["Tenuous","adjective","very weak, thin, or slight","His argument had only a {tenuous} connection to the evidence.","weak, flimsy, shaky"]
+],
+3: [
+["Amnesty","noun","an official pardon for a group of people; a period when penalties are waived","The library declared an {amnesty} week: return overdue books with no fines.","pardon, forgiveness, reprieve"],
+["Anomalous","adjective","different from what is normal or expected","One {anomalous} result made the scientists rerun the experiment.","abnormal, irregular, unusual"],
+["Aspersion","noun","an attack on someone's reputation; a damaging remark","Don't cast {aspersions} on his character without proof.","slander, insult, smear"],
+["Autonomy","noun","the right or ability to govern yourself; independence","Getting a license gives teens more {autonomy}.","independence, self-rule, freedom"],
+["Axiomatic","adjective","self-evident; accepted as obviously true","It's {axiomatic} that practice improves performance.","self-evident, unquestionable, given"],
+["Cajole","verb","to persuade someone by flattery or gentle coaxing","She {cajoled} her dad into letting her stay out an hour later.","coax, sweet-talk, wheedle"],
+["Castigate","verb","to criticize or scold severely","The editor {castigated} the reporter for publishing unchecked facts.","scold, rebuke, berate"],
+["Caveat","noun","a warning or condition to keep in mind","You can borrow the car, with one {caveat}: be home by ten.","warning, condition, qualification"],
+["Contrive","verb","to plan or create something cleverly, often with trickery; to manage to bring something about","They {contrived} a way to sneak the puppy into the dorm.","devise, engineer, scheme","Contrived (adjective) means forced or artificial."],
+["Disabuse","verb","to free someone from a mistaken belief","Let me {disabuse} you of the idea that this test will be easy.","correct, set straight, enlighten"],
+["Extricate","verb","to free someone or something from a difficult situation or tangle","It took twenty minutes to {extricate} the kite from the tree.","free, release, untangle"],
+["Fetter","verb","to restrain or limit; as a noun, a chain for the ankles","Don't let fear of failure {fetter} your ambition.","restrain, shackle, hamper"],
+["Flout","verb","to openly ignore or disregard a rule or custom","Drivers who {flout} the speed limit near schools get heavy fines.","defy, disregard, scorn","Flout = ignore a rule. Flaunt = show off."],
+["Immutable","adjective","unchanging; impossible to change","The laws of physics are {immutable}.","fixed, permanent, unalterable","mutate = change, im- = not."],
+["Precept","noun","a general rule meant to guide behavior or thought","“Treat others as you want to be treated” is a {precept} found in many cultures.","principle, rule, guideline"],
+["Scathing","adjective","harshly critical; severe","The critic wrote a {scathing} review of the movie.","harsh, biting, withering"],
+["Straitlaced","adjective","having very strict moral views; prudish","Her {straitlaced} aunt disapproved of anything louder than classical music.","prim, prudish, puritanical"],
+["Surreptitious","adjective","done secretly, because it would not be approved of","He took a {surreptitious} glance at his phone during the test.","secret, sneaky, covert"],
+["Unwieldy","adjective","hard to carry, move, or manage because of size, shape, or complexity","The giant poster board was {unwieldy} on the bus.","cumbersome, awkward, bulky"],
+["Vicarious","adjective","experienced through someone else's actions or feelings, not directly","I get a {vicarious} thrill watching my sister's skydiving videos.","indirect, secondhand, surrogate"]
+]};
+const VOCAB = [];
+for (const u of [1, 2, 3]) VOCAB_RAW[u].forEach(([word, pos, def, ex, syn, tip]) => VOCAB.push({ id: word.toLowerCase(), word, pos, def, ex, syn, tip, unit: u }));
+const exHTML = w => esc(w.ex).replace(/\{(.+?)\}/, '<b>$1</b>');
+const exBlank = w => esc(w.ex).replace(/\{(.+?)\}/, '<span class="gap"></span>');
+
+/* ================= driver's ed data (Delaware Driver Manual) ================= */
+const DRIVERS = [
+{q:"In Delaware, what is the legal blood alcohol concentration (BAC) limit for drivers 21 and older?",a:"0.08%",w:["0.10%","0.05%","0.02%"],why:"At 0.08% or higher you are legally DUI. You can still be charged below 0.08 if you're impaired."},
+{q:"What is the BAC limit for drivers under 21 in Delaware?",a:"0.02%",w:["0.08%","0.05%","0.00% with no exceptions"],why:"Delaware's zero-tolerance law for under-21 drivers sets the limit at 0.02%."},
+{q:"What does Delaware's implied consent law mean?",a:"By driving, you have agreed to a chemical test for alcohol or drugs if an officer asks",w:["You must consent before police can search your car","You consent to a breath test only if you were in a crash","You can refuse a test with no penalty"],why:"Getting a license means you've already agreed to testing. Refusing leads to automatic license revocation."},
+{q:"What is the penalty for refusing a chemical test the first time in Delaware?",a:"License revoked for 1 year",w:["A warning","License suspended for 30 days","A $50 fine only"],why:"A first refusal brings a 1-year revocation, with longer revocations for repeat refusals."},
+{q:"What is the only thing that sobers a person up?",a:"Time",w:["Black coffee","A cold shower","Eating a big meal"],why:"The liver removes alcohol at a fixed rate. Coffee and showers do nothing to lower BAC."},
+{q:"About how long does the body take to process one standard drink?",a:"About 1 hour",w:["About 15 minutes","About 3 hours","About 30 minutes"],why:"Roughly one drink per hour, no matter how big the person is or what they do."},
+{q:"Which drinks contain about the same amount of alcohol?",a:"12 oz of beer, 5 oz of wine, and 1.5 oz of 80-proof liquor",w:["12 oz of beer, 12 oz of wine, and 12 oz of liquor","A pint of beer and a shot of liquor only","Beer always has less alcohol than wine or liquor"],why:"Each of these is one standard drink."},
+{q:"Alcohol first affects which driving skill?",a:"Judgment",w:["Vision","Hearing","Muscle strength"],why:"Judgment goes first, which is why impaired drivers often think they're fine to drive."},
+{q:"Under good conditions, what is the minimum following distance behind the car ahead?",a:"At least 2 seconds",w:["1 second","One car length for every 20 mph","Half a second"],why:"Pick a fixed object and count. Add more time at night, in rain or snow, or behind trucks and motorcycles."},
+{q:"How far before a turn must you signal in Delaware?",a:"At least 300 feet",w:["At least 100 feet","At least 50 feet","At least 500 feet"],why:"Delaware law requires a turn signal for at least the last 300 feet before you turn."},
+{q:"When must you dim your high beams for an oncoming vehicle?",a:"Within 500 feet",w:["Within 200 feet","Within 1,000 feet","Within 100 feet"],why:"Dim within 500 feet of oncoming traffic."},
+{q:"When following another vehicle, you must dim your high beams within:",a:"200 feet",w:["500 feet","50 feet","1,000 feet"],why:"Your high beams glare in the other driver's mirrors."},
+{q:"When must you turn on your headlights in Delaware?",a:"From sunset to sunrise, when you can't see 1,000 feet ahead, and whenever your wipers are on because of weather",w:["Only after dark","Only when it's raining hard","From one hour after sunset until one hour before sunrise"],why:"Delaware has a wipers-on, lights-on rule."},
+{q:"In fog, you should use your:",a:"Low beams",w:["High beams","Parking lights only","Hazard lights while driving at normal speed"],why:"High beams reflect off fog and make visibility worse."},
+{q:"You may not park within how many feet of a fire hydrant?",a:"15 feet",w:["10 feet","20 feet","30 feet"],why:"Keep 15 feet clear so firefighters can reach the hydrant."},
+{q:"You may not park within how many feet of a crosswalk at an intersection?",a:"20 feet",w:["15 feet","10 feet","50 feet"],why:"Cars parked too close hide pedestrians from other drivers."},
+{q:"You may not park within how many feet of a stop sign or traffic signal?",a:"30 feet",w:["20 feet","15 feet","50 feet"],why:"Parked cars would block the sign or signal."},
+{q:"You may not park within how many feet of a railroad crossing?",a:"50 feet",w:["30 feet","15 feet","100 feet"],why:"50 feet from the nearest rail."},
+{q:"When parallel parking, your wheels must be within how far of the curb?",a:"12 inches",w:["6 inches","18 inches","24 inches"],why:"Within 12 inches, parallel to the curb."},
+{q:"When stopping for a train at a railroad crossing, stop:",a:"Between 15 and 50 feet from the nearest rail",w:["Right at the tracks","At least 100 feet away","Between 5 and 10 feet from the tracks"],why:"Trains overhang the rails, so never stop closer than 15 feet."},
+{q:"A school bus has its red lights flashing on a two-lane road. What must you do?",a:"Stop, whether you're behind it or coming toward it, and wait until the lights stop",w:["Slow down and pass carefully","Stop only if you are behind the bus","Stop only if children are visible"],why:"On an undivided road, traffic in both directions stops."},
+{q:"When do you NOT have to stop for a school bus with flashing red lights?",a:"When you're on the opposite side of a divided highway with a median",w:["When no children are visible","When you're running late","When the bus is on a two-lane road and you're coming toward it"],why:"A physical median or divider means opposite-direction traffic may continue carefully."},
+{q:"A school bus has flashing yellow (amber) lights. This means:",a:"Slow down and prepare to stop; the bus is about to stop",w:["Pass quickly before it stops","The bus is done loading","Nothing for other drivers"],why:"Yellow lights come on before the red lights and stop arm."},
+{q:"Unless posted otherwise, the speed limit in a Delaware business or residential district is:",a:"25 mph",w:["35 mph","30 mph","20 mph"],why:"25 mph in business and residential districts."},
+{q:"The speed limit in a Delaware school zone when the signs are active is:",a:"20 mph",w:["15 mph","25 mph","10 mph"],why:"20 mph when the school zone sign or lights say so."},
+{q:"Unless posted, the speed limit on a two-lane Delaware highway is:",a:"50 mph",w:["55 mph","45 mph","65 mph"],why:"Two-lane roads: 50 mph. Four-lane roads: 55 mph. Some highways are posted at 65."},
+{q:"Unless posted, the speed limit on a four-lane Delaware highway is:",a:"55 mph",w:["50 mph","65 mph","60 mph"],why:"Four-lane roads default to 55 mph."},
+{q:"The basic speed law says:",a:"Never drive faster than is safe for current conditions, even if you're under the limit",w:["You may go 5 mph over the limit","You must always drive exactly the speed limit","Minimum speed is half the speed limit"],why:"In rain, fog or heavy traffic, the posted limit can still be too fast."},
+{q:"Two cars arrive at an uncontrolled intersection at the same time. Who goes first?",a:"The car on the right",w:["The car on the left","The bigger vehicle","Whoever is going straight, always"],why:"Yield to the driver on your right."},
+{q:"At a four-way stop, who has the right of way?",a:"The first vehicle to come to a complete stop; if tied, the vehicle on the right",w:["The vehicle on the main road","The vehicle turning left","The fastest vehicle"],why:"First to stop goes first."},
+{q:"When turning left at an intersection, you must yield to:",a:"Oncoming traffic and pedestrians",w:["No one if you have a green light","Only vehicles turning right","Only emergency vehicles"],why:"A green light does not give left turns the right of way. Wait for a gap."},
+{q:"An emergency vehicle with its siren and lights on is coming toward you. You should:",a:"Pull to the right edge of the road and stop until it passes",w:["Speed up to get out of the way","Stop in your lane immediately","Pull to the left"],why:"Stay stopped until it passes, and never follow closer than 500 feet."},
+{q:"Delaware's Move Over law requires you to:",a:"Move over a lane, or slow down if you can't, when passing a stopped emergency vehicle, tow truck or highway worker with flashing lights",w:["Move to the left lane on all highways","Pull off the road for every police car you see","Change lanes only when told to by police"],why:"It protects people working at the roadside."},
+{q:"A flashing red traffic light means:",a:"Come to a complete stop, then go when safe, like a stop sign",w:["Slow down and proceed","The light is broken, so ignore it","Stop only if cars are coming"],why:"Treat it exactly like a stop sign."},
+{q:"A flashing yellow traffic light means:",a:"Slow down and proceed with caution",w:["Come to a complete stop","Speed up to clear the intersection","Pedestrians only"],why:"No stop needed, but be careful."},
+{q:"Is a right turn on red allowed in Delaware?",a:"Yes, after a complete stop and yielding, unless a sign prohibits it",w:["Never","Only at night","Yes, without stopping"],why:"Stop fully, yield to pedestrians and traffic, then turn."},
+{q:"A solid yellow line on your side of the center line means:",a:"No passing",w:["Passing is allowed","Lane for turning only","Slow down"],why:"Broken yellow on your side means you may pass when it's safe."},
+{q:"Yellow lines on the road separate:",a:"Traffic moving in opposite directions",w:["Traffic moving in the same direction","Bike lanes from car lanes","Parking areas"],why:"White lines separate lanes going the same direction."},
+{q:"You may not pass within how many feet of an intersection, bridge or railroad crossing?",a:"100 feet",w:["50 feet","500 feet","25 feet"],why:"You can't see what's coming in these spots."},
+{q:"What shape is a stop sign?",a:"Octagon (8 sides)",w:["Triangle","Diamond","Pentagon"],why:"It's the only eight-sided sign, so you can recognize it even from behind or covered in snow."},
+{q:"A pennant-shaped (sideways triangle) sign means:",a:"No passing zone",w:["Yield","School zone","Railroad crossing ahead"],why:"It's posted on the left side of the road where the no-passing zone begins."},
+{q:"A round yellow sign with an X and “RR” means:",a:"Railroad crossing ahead",w:["Road closed","Rest area","Stop ahead"],why:"It warns you before you reach the crossing. The crossbuck (white X) marks the crossing itself."},
+{q:"A five-sided (pentagon) sign means:",a:"School zone or school crossing",w:["No passing","Construction","Hospital ahead"],why:"Pentagons are only used near schools."},
+{q:"Orange signs are used for:",a:"Construction and work zones",w:["Recreation areas","Motorist services","School zones"],why:"Fines are often doubled in work zones."},
+{q:"Diamond-shaped signs are:",a:"Warning signs",w:["Regulatory signs","Guide signs","Service signs"],why:"They warn of hazards ahead such as curves, merges, or deer."},
+{q:"At what speed can your tires begin to hydroplane on a wet road?",a:"About 35 mph",w:["About 65 mph","About 15 mph","Only above 55 mph"],why:"If you hydroplane, ease off the gas, keep the wheel straight, and don't slam the brakes."},
+{q:"If your car begins to skid, you should:",a:"Ease off the gas and steer in the direction you want the front of the car to go",w:["Slam on the brakes","Steer hard the opposite way","Accelerate out of it"],why:"Don't overcorrect. Look and steer where you want to go."},
+{q:"If your brakes fail, you should first:",a:"Pump the brake pedal, then downshift and slowly apply the parking brake",w:["Turn the engine off","Swerve onto the shoulder at full speed","Put the car in park"],why:"Pumping may build pressure. A lower gear and the parking brake help slow you."},
+{q:"If a tire blows out, you should:",a:"Hold the wheel firmly, ease off the gas, and slow down gradually before pulling off",w:["Brake hard right away","Turn sharply to the shoulder","Speed up to keep control"],why:"Hard braking or steering can make you lose control."},
+{q:"If your right wheels drift off the pavement, you should:",a:"Ease off the gas, keep steering straight, and gently return to the road when it's safe",w:["Jerk the wheel back onto the road immediately","Slam on the brakes","Speed up"],why:"Jerking the wheel can send you into oncoming traffic."},
+{q:"If your gas pedal sticks, you should:",a:"Shift into neutral, brake, and pull off the road",w:["Turn off the ignition right away while moving","Pump the gas pedal","Put the car in park"],why:"Turning the key all the way off can lock the steering."},
+{q:"Recommended hand position on the steering wheel is:",a:"9 and 3 (or 8 and 4)",w:["10 and 2","12 o'clock with one hand","Hands at the bottom of the wheel"],why:"Lower positions keep your arms out of the way if the airbag deploys."},
+{q:"Before changing lanes, you should check your mirrors and:",a:"Turn your head to check your blind spot",w:["Honk your horn","Flash your headlights","Speed up first"],why:"Mirrors don't show everything."},
+{q:"You miss your exit on the highway. You should:",a:"Continue to the next exit",w:["Back up on the shoulder","Make a U-turn through the median","Stop and wait for a gap to reverse"],why:"Never back up or turn around on a highway."},
+{q:"When entering a highway from an on-ramp, you should:",a:"Use the acceleration lane to match the speed of traffic, then merge into a gap",w:["Stop at the end of the ramp","Merge slowly at 30 mph","Expect highway traffic to yield to you"],why:"Merge at highway speed. Traffic already on the highway has the right of way."},
+{q:"Large trucks have big blind spots called no-zones. A good rule is:",a:"If you can't see the truck driver in their mirror, they can't see you",w:["Trucks can see all around them","It's safest to ride right behind a truck","Pass trucks on the right"],why:"Don't linger beside or right behind a truck, and don't cut in front of it."},
+{q:"When passing a bicyclist, Delaware drivers must:",a:"Change lanes if possible, or leave at least 3 feet",w:["Honk to warn them","Pass as closely as possible","Stay behind them until they turn"],why:"Bicyclists have the same right to the road as drivers."},
+{q:"A pedestrian is carrying a white cane or using a guide dog. You must:",a:"Always yield to them",w:["Honk so they know you're there","Yield only in a crosswalk","Drive around them"],why:"These signal a person who is blind or visually impaired."},
+{q:"Who must wear a seat belt in Delaware?",a:"The driver and every passenger, in every seat",w:["Only the driver","Only front-seat occupants","Only passengers under 16"],why:"Delaware's seat belt law is primary, so police can pull you over for not wearing one."},
+{q:"In Delaware, children must ride in a child safety seat or booster until they are:",a:"8 years old or 65 pounds",w:["4 years old or 40 pounds","12 years old","10 years old or 80 pounds"],why:"Children under 12 (or 65 pounds) should ride in the back seat if the car has a passenger airbag."},
+{q:"Delaware's cell phone law says drivers:",a:"May not use a handheld phone while driving",w:["May text at red lights","May use a handheld phone under 25 mph","May use a handheld phone on highways only"],why:"Permit holders and new drivers may not use any phone, even hands-free."},
+{q:"Under Delaware's GDL program, how many hours of supervised practice does a learner need?",a:"50 hours, including 10 at night",w:["30 hours, including 5 at night","25 hours, all during the day","100 hours, including 20 at night"],why:"The hours are logged with your supervising driver."},
+{q:"Who may supervise a Delaware learner's permit driver?",a:"A licensed driver at least 25 years old who has held a license for at least 5 years",w:["Any licensed driver 18 or older","Any adult passenger","A licensed driver 21 or older"],why:"The supervisor sits in the front passenger seat."},
+{q:"During the second six months of a Delaware Level 1 permit, unsupervised driving is not allowed between:",a:"10 p.m. and 6 a.m.",w:["Midnight and 5 a.m.","9 p.m. and 5 a.m.","11 p.m. and 7 a.m."],why:"Nighttime driving is riskier for new drivers."}
+];
+
+/* ================= state ================= */
+const V = { mode: store.get('cram.vmode', 'list'), unit: 'all', q: '', known: new Set(store.get('cram.known', [])) };
+const D = { mode: store.get('cram.dmode', 'cards'), src: 'dmv', known: new Set(store.get('cram.dknown', [])), qz: store.get('cram.quizlet', []) };
+const M = { topic: store.get('cram.mtopic', 'constant') };
+
+/* ================= tabs ================= */
+const TABS = ['vocab', 'drivers', 'math'];
+function setTab(t) {
+  if (!TABS.includes(t)) t = 'vocab';
+  currentTab = t;
+  document.body.dataset.tab = t;
+  $$('.tab').forEach(b => b.setAttribute('aria-selected', String(b.dataset.tab === t)));
+  TABS.forEach(x => { $('#p-' + x).hidden = x !== t; });
+  store.set('cram.tab', t);
+  if (location.hash !== '#' + t) { try { history.replaceState(null, '', '#' + t); } catch (e) {} }
+}
+$$('.tab').forEach(b => b.addEventListener('click', () => setTab(b.dataset.tab)));
+window.addEventListener('hashchange', () => setTab(location.hash.slice(1)));
+
+/* ================= flashcards ================= */
+function Flashcards(root, items, tab, opts = {}) {
+  const isKnown = opts.isKnown || (() => false), setKnown = opts.setKnown || (() => {});
+  let order = items.slice(), i = 0, onlyLearning = false, swapped = false;
+  root.innerHTML = `
+  <div class="fc">
+    <div class="fc-meta">
+      <span class="fc-count"></span>
+      <div class="fc-tools">
+        <button class="btn ghost" data-t="shuffle">Shuffle</button>
+        <button class="btn ghost" data-t="swap" aria-pressed="false">${opts.swapLabel || 'Answer first'}</button>
+        <button class="btn ghost" data-t="learning" aria-pressed="false">Only “still learning”</button>
+      </div>
+    </div>
+    <div class="fc-card" role="button" tabindex="0" aria-label="Flashcard, click to flip">
+      <div class="fc-inner">
+        <div class="fc-face fc-front"></div>
+        <div class="fc-face fc-back"></div>
+      </div>
+    </div>
+    <div class="empty" hidden>Every card here is marked “got it.” Turn off the filter to review them all.</div>
+    <p class="fc-hint">Click or press <kbd>Space</kbd> to flip · <kbd>←</kbd> <kbd>→</kbd> to move · <kbd>1</kbd> still learning · <kbd>2</kbd> got it</p>
+    <div class="fc-actions">
+      <button class="btn" data-a="prev">← Back</button>
+      <button class="btn bad" data-a="no">Still learning</button>
+      <button class="btn good" data-a="yes">Got it</button>
+      <button class="btn" data-a="next">Next →</button>
+    </div>
+  </div>`;
+  const card = $('.fc-card', root), front = $('.fc-front', root), back = $('.fc-back', root), count = $('.fc-count', root), empty = $('.empty', root);
+  const list = () => onlyLearning ? order.filter(x => !isKnown(x.id)) : order;
+  function show() {
+    const L = list();
+    const none = !L.length;
+    card.hidden = none; empty.hidden = !none; $('.fc-actions', root).hidden = none; $('.fc-hint', root).hidden = none;
+    if (none) { count.textContent = '0 cards'; return; }
+    if (i >= L.length) i = 0; if (i < 0) i = L.length - 1;
+    const it = L[i];
+    card.classList.add('instant'); card.classList.remove('flipped'); void card.offsetWidth; card.classList.remove('instant');
+    const status = isKnown(it.id) ? '<span class="fc-status">✓ Got it</span>' : '';
+    front.innerHTML = `<span class="label">${swapped ? 'Answer' : 'Front'}</span>${status}` + (swapped ? it.back : it.front);
+    back.innerHTML = `<span class="label">${swapped ? 'Front' : 'Answer'}</span>` + (swapped ? it.front : it.back);
+    count.textContent = `${i + 1} / ${L.length}`;
+  }
+  const flip = () => card.classList.toggle('flipped');
+  const go = d => { i += d; show(); };
+  function mark(yes) {
+    const L = list(); if (!L.length) return;
+    setKnown(L[i].id, yes); if (opts.onChange) opts.onChange();
+    if (!(onlyLearning && yes)) i++;
+    show();
+  }
+  card.addEventListener('click', flip);
+  root.onclick = (e => {
+    const a = e.target.closest('[data-a]'), t = e.target.closest('[data-t]');
+    if (a) ({ prev: () => go(-1), next: () => go(1), yes: () => mark(true), no: () => mark(false) })[a.dataset.a]();
+    if (t) {
+      if (t.dataset.t === 'shuffle') { order = shuffle(order); i = 0; }
+      if (t.dataset.t === 'swap') { swapped = !swapped; t.setAttribute('aria-pressed', swapped); }
+      if (t.dataset.t === 'learning') { onlyLearning = !onlyLearning; t.setAttribute('aria-pressed', onlyLearning); i = 0; }
+      show();
+    }
+  });
+  keyHandlers[tab] = e => {
+    if (card.hidden) return;
+    if (e.key === ' ' || e.key === 'Enter') { if (e.target.closest('button')) return; e.preventDefault(); flip(); }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); go(1); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); go(-1); }
+    else if (e.key === '1') mark(false);
+    else if (e.key === '2') mark(true);
+  };
+  show();
+}
+
+/* ================= quiz ================= */
+function Quiz(root, gen, tab, opts = {}) {
+  let qs = [], i = 0, score = 0, missed = [], answered = false;
+  function start(list) { qs = list || gen(); i = 0; score = 0; missed = []; render(); }
+  function render() {
+    if (i >= qs.length) return finish();
+    const q = qs[i]; answered = false;
+    root.innerHTML = `
+    <div class="qz">
+      ${opts.back ? '<button class="btn ghost backlink" data-q="back">← ' + opts.back + '</button>' : ''}
+      <div class="qz-top"><span>Question ${i + 1} of ${qs.length}</span><span class="qz-score">${score} correct</span></div>
+      <div class="bar"><span style="width:${(i / qs.length) * 100}%"></span></div>
+      <div class="qz-prompt">${q.prompt}</div>
+      <div class="qz-choices">${q.choices.map((c, k) => `<button class="choice" data-k="${k}"><kbd>${k + 1}</kbd><span>${c}</span></button>`).join('')}</div>
+      <div class="qz-feedback" hidden></div>
+      <div class="qz-next" hidden><button class="btn primary" data-q="next">${i + 1 === qs.length ? 'See results' : 'Next question'} →</button></div>
+    </div>`;
+  }
+  function choose(k) {
+    if (answered) return; answered = true;
+    const q = qs[i], ok = k === q.answer;
+    if (ok) score++; else missed.push(q);
+    $$('.choice', root).forEach((b, j) => { b.disabled = true; if (j === q.answer) b.classList.add('right'); else if (j === k) b.classList.add('wrong'); });
+    const fb = $('.qz-feedback', root);
+    fb.hidden = false; fb.className = 'qz-feedback ' + (ok ? 'ok' : 'no');
+    fb.innerHTML = `<strong>${ok ? 'Correct' : 'Not quite. The answer is: ' + q.choices[q.answer]}</strong>${q.explain ? `<div>${q.explain}</div>` : ''}`;
+    $('.qz-score', root).textContent = `${score} correct`;
+    const n = $('.qz-next', root); n.hidden = false; $('button', n).focus({ preventScroll: true });
+  }
+  function finish() {
+    const pct = Math.round((score / qs.length) * 100);
+    const msg = pct === 100 ? 'Perfect round.' : pct >= 90 ? 'Ready for the test.' : pct >= 75 ? 'Close. Retry the ones you missed.' : 'Keep going. Review the misses below, then run it again.';
+    const missedList = missed;
+    root.innerHTML = `
+    <div class="qz done">
+      ${opts.back ? '<button class="btn ghost backlink" data-q="back">← ' + opts.back + '</button>' : ''}
+      <p class="eyebrow">Round complete</p>
+      <p class="big-score">${score}<span>/${qs.length}</span></p>
+      <p class="muted" style="margin:0">${pct}% · ${msg}</p>
+      <div class="row">
+        ${missedList.length ? `<button class="btn primary" data-q="missed">Retry the ${missedList.length} I missed</button>` : ''}
+        <button class="btn" data-q="new">New round</button>
+      </div>
+      ${missedList.length ? `<h4 style="margin:10px 0 0;align-self:flex-start">Review what you missed</h4><ol class="review">${missedList.map(q => `<li><div style="margin-bottom:4px"><b>${q.choices[q.answer]}</b></div>${q.explain || ''}</li>`).join('')}</ol>` : ''}
+    </div>`;
+    root._missed = missedList.map(q => { const c = shuffle(q.choices); return { ...q, choices: c, answer: c.indexOf(q.choices[q.answer]) }; });
+  }
+  root.onclick = e => {
+    const c = e.target.closest('.choice'); if (c && !c.disabled) return choose(+c.dataset.k);
+    const b = e.target.closest('[data-q]'); if (!b) return;
+    const act = b.dataset.q;
+    if (act === 'next') { i++; render(); }
+    else if (act === 'new') start();
+    else if (act === 'missed') start(shuffle(root._missed));
+    else if (act === 'back' && opts.onBack) opts.onBack();
+  };
+  keyHandlers[tab] = e => {
+    if (/^[1-9]$/.test(e.key) && !answered && qs[i]) { const k = +e.key - 1; if (k < qs[i].choices.length) { e.preventDefault(); choose(k); } }
+    else if (e.key === 'Enter' && answered && i < qs.length) { e.preventDefault(); i++; render(); }
+  };
+  start();
+}
+
+/* ================= vocab ================= */
+function saveKnown() { store.set('cram.known', [...V.known]); }
+function updateKnown() {
+  $('#v-known').textContent = V.known.size;
+  $('#v-bar').style.width = (V.known.size / 60 * 100) + '%';
+  const lc = $('#v-unit [data-v="learning"]'); if (lc) lc.textContent = `Still learning (${60 - V.known.size})`;
+}
+function vPool() {
+  if (V.unit === 'learning') return VOCAB.filter(w => !V.known.has(w.id));
+  if (V.unit === 'all') return VOCAB;
+  return VOCAB.filter(w => w.unit === +V.unit);
+}
+$('#v-unit').innerHTML = `<button class="chip" data-v="all">All 60</button>` + [1, 2, 3].map(u => `<button class="chip" data-v="${u}">${UNITS[u]}</button>`).join('') + `<button class="chip" data-v="learning">Still learning</button>`;
+$('#v-unit').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { V.unit = b.dataset.v; renderVocab(); } });
+$('#v-mode').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { V.mode = b.dataset.v; store.set('cram.vmode', V.mode); renderVocab(); } });
+
+function wordCard(w) {
+  const k = V.known.has(w.id);
+  return `<article class="word${k ? ' is-known' : ''}" data-id="${w.id}">
+    <header><h3>${w.word}</h3><span class="pos">${w.pos}</span><span class="unit">${UNITS[w.unit]}</span></header>
+    <p class="def">${esc(w.def)}</p>
+    <p class="ex">${exHTML(w)}</p>
+    <p class="syn">Synonyms: <span>${esc(w.syn)}</span></p>
+    ${w.tip ? `<p class="tip">${esc(w.tip)}</p>` : ''}
+    <button class="know" aria-pressed="${k}">${k ? '✓ Got it' : 'Mark “got it”'}</button>
+  </article>`;
+}
+function renderVocab() {
+  setPressed($('#v-mode'), V.mode); setPressed($('#v-unit'), V.unit); updateKnown();
+  const body = $('#v-body'); keyHandlers.vocab = null;
+  const pool = vPool();
+  if (!pool.length) { body.innerHTML = `<div class="card empty">You've marked all 60 words “got it.” Pick a quiz unit to keep testing yourself.</div>`; return; }
+  if (V.mode === 'list') {
+    body.innerHTML = `<div class="panel"><div class="search"><input id="v-search" type="search" placeholder="Search ${pool.length} words or definitions" value="${esc(V.q)}" aria-label="Search words"></div><div class="wordgrid" id="v-grid"></div></div>`;
+    const grid = $('#v-grid');
+    const draw = () => {
+      const q = V.q.trim().toLowerCase();
+      const L = q ? pool.filter(w => (w.word + ' ' + w.def + ' ' + w.syn).toLowerCase().includes(q)) : pool;
+      grid.innerHTML = L.length ? L.map(wordCard).join('') : `<div class="empty">No words match “${esc(V.q)}”.</div>`;
+    };
+    $('#v-search').addEventListener('input', e => { V.q = e.target.value; draw(); });
+    grid.addEventListener('click', e => {
+      const b = e.target.closest('.know'); if (!b) return;
+      const art = b.closest('.word'), id = art.dataset.id;
+      if (V.known.has(id)) V.known.delete(id); else V.known.add(id);
+      saveKnown(); updateKnown();
+      const k = V.known.has(id); art.classList.toggle('is-known', k); b.setAttribute('aria-pressed', k); b.textContent = k ? '✓ Got it' : 'Mark “got it”';
+    });
+    draw();
+  } else if (V.mode === 'cards') {
+    Flashcards(body, pool.map(w => ({
+      id: w.id,
+      front: `<p class="fc-word">${w.word}</p><span class="fc-pos">${w.pos}</span>`,
+      back: `<p class="fc-def">${esc(w.def)}</p><p class="ex">${exHTML(w)}</p>`
+    })), 'vocab', {
+      swapLabel: 'Definition first',
+      isKnown: id => V.known.has(id),
+      setKnown: (id, y) => { if (y) V.known.add(id); else V.known.delete(id); saveKnown(); },
+      onChange: updateKnown
+    });
+  } else {
+    renderVocabQuizSetup(body, pool);
+  }
+}
+const VQ = { type: 'mix', len: '20' };
+function vocabQuestion(w, type) {
+  if (type === 'mix') type = ['def', 'word', 'blank'][Math.floor(Math.random() * 3)];
+  const same = shuffle(VOCAB.filter(x => x.id !== w.id && x.pos === w.pos));
+  const other = shuffle(VOCAB.filter(x => x.id !== w.id && x.pos !== w.pos));
+  const ds = [...same, ...other].slice(0, 3);
+  const explain = `<b>${w.word}</b> <i>(${w.pos})</i>: ${esc(w.def)}.<br><i>${exHTML(w)}</i>`;
+  if (type === 'word') return mc(`<p class="q-label">What does this word mean?</p><p class="q-word">${w.word} <em>${w.pos}</em></p>`, esc(w.def), ds.map(x => esc(x.def)), explain);
+  if (type === 'blank') return mc(`<p class="q-label">Which word best completes the sentence?</p><p class="q-big">${exBlank(w)}</p><p class="muted" style="font-size:.85rem;margin-top:10px">The word may need an ending like -ed or -s.</p>`, w.word, ds.map(x => x.word), explain);
+  return mc(`<p class="q-label">Which word means…</p><p class="q-big">${esc(w.def)}</p>`, w.word, ds.map(x => x.word), explain);
+}
+function renderVocabQuizSetup(body, pool) {
+  const lens = [10, 20].filter(n => n < pool.length);
+  if (!lens.map(String).includes(VQ.len) && VQ.len !== 'all') VQ.len = 'all';
+  body.innerHTML = `
+  <div class="card setup">
+    <div><p class="eyebrow">${V.unit === 'all' ? 'All 60 words' : V.unit === 'learning' ? 'Words you\'re still learning' : UNITS[V.unit]}</p><h3>Build a quiz</h3></div>
+    <div class="field"><span>Question type</span>
+      <div class="seg" id="vq-type"><button data-v="mix">Mix of all</button><button data-v="def">Definition → word</button><button data-v="word">Word → definition</button><button data-v="blank">Fill in the blank</button></div>
+    </div>
+    <div class="field"><span>Length</span>
+      <div class="seg" id="vq-len">${lens.map(n => `<button data-v="${n}">${n} questions</button>`).join('')}<button data-v="all">All ${pool.length}</button></div>
+    </div>
+    <div><button class="btn primary" id="vq-start">Start quiz →</button></div>
+  </div>`;
+  const sync = () => { setPressed($('#vq-type'), VQ.type); setPressed($('#vq-len'), VQ.len); };
+  $('#vq-type').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { VQ.type = b.dataset.v; sync(); } };
+  $('#vq-len').onclick = e => { const b = e.target.closest('[data-v]'); if (b) { VQ.len = b.dataset.v; sync(); } };
+  sync();
+  $('#vq-start').onclick = () => {
+    const n = VQ.len === 'all' ? pool.length : +VQ.len;
+    Quiz(body, () => shuffle(pool).slice(0, n).map(w => vocabQuestion(w, VQ.type)), 'vocab', { back: 'Quiz settings', onBack: renderVocab });
+  };
+}
+
+/* ================= driver's ed ================= */
+function dItems() {
+  if (D.src === 'mine' && D.qz.length) return D.qz.map((c, i) => ({ id: 'q:' + c.t.slice(0, 40), front: `<p class="fc-q">${esc(c.t)}</p>`, back: `<p class="ans">${esc(c.d)}</p>` }));
+  return DRIVERS.map((c, i) => ({ id: 'd' + i, front: `<p class="fc-q">${esc(c.q)}</p>`, back: `<p class="ans">${esc(c.a)}</p><p class="why">${esc(c.why)}</p>` }));
+}
+function dQuestions() {
+  if (D.src === 'mine' && D.qz.length >= 4) {
+    return shuffle(D.qz).map(c => {
+      const wr = shuffle(D.qz.filter(x => x.d !== c.d)).slice(0, 3).map(x => esc(x.d));
+      return mc(`<p class="q-label">Your Quizlet cards</p><p class="q-big">${esc(c.t)}</p>`, esc(c.d), wr, '');
+    });
+  }
+  return shuffle(DRIVERS).map(c => mc(`<p class="q-label">Delaware driver's ed</p><p class="q-big">${esc(c.q)}</p>`, esc(c.a), c.w.map(esc), esc(c.why)));
+}
+function updateDMeta() { $('#d-meta').textContent = D.qz.length ? `${DRIVERS.length} questions + ${D.qz.length} of yours` : `${DRIVERS.length} questions · Delaware`; }
+$('#d-mode').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { D.mode = b.dataset.v; store.set('cram.dmode', D.mode); renderDrivers(); } });
+$('#d-src').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { D.src = b.dataset.v; renderDrivers(); } });
+
+function signSVG(kind) {
+  const S = {
+    stop: `<polygon points="14,1 32,1 45,14 45,32 32,45 14,45 1,32 1,14" fill="#C8102E" stroke="#fff" stroke-width="2"/><text x="23" y="27.5" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Arial, sans-serif">STOP</text>`,
+    yield: `<polygon points="2,4 44,4 23,42" fill="#fff" stroke="#C8102E" stroke-width="5" stroke-linejoin="round"/>`,
+    pennant: `<polygon points="2,8 44,23 2,38" fill="#F5C400" stroke="#222" stroke-width="1.5"/><text x="15" y="26" font-size="6.5" font-weight="700" fill="#222" font-family="Arial, sans-serif">NO</text>`,
+    rr: `<circle cx="23" cy="23" r="21" fill="#F5C400" stroke="#222" stroke-width="1.5"/><path d="M10 10 L36 36 M36 10 L10 36" stroke="#222" stroke-width="2.5"/><text x="9" y="27" font-size="9" font-weight="700" fill="#222" font-family="Arial, sans-serif">R</text><text x="31" y="27" font-size="9" font-weight="700" fill="#222" font-family="Arial, sans-serif">R</text>`,
+    school: `<polygon points="23,2 44,18 44,44 2,44 2,18" fill="#C7E81E" stroke="#222" stroke-width="1.5"/>`,
+    warn: `<polygon points="23,1 45,23 23,45 1,23" fill="#F5C400" stroke="#222" stroke-width="1.5"/>`,
+    work: `<polygon points="23,1 45,23 23,45 1,23" fill="#F28C00" stroke="#222" stroke-width="1.5"/>`,
+    cross: `<g transform="rotate(35 23 23)"><rect x="3" y="18" width="40" height="10" fill="#fff" stroke="#222" stroke-width="1.5"/></g><g transform="rotate(-35 23 23)"><rect x="3" y="18" width="40" height="10" fill="#fff" stroke="#222" stroke-width="1.5"/></g>`
+  };
+  return `<svg viewBox="0 0 46 46" aria-hidden="true">${S[kind]}</svg>`;
+}
+function cheatSheet() {
+  const nums = [
+    ['0.08%', 'BAC limit, 21 and older'], ['0.02%', 'BAC limit, under 21'], ['1 year', 'License revoked for a first test refusal'],
+    ['2+ sec', 'Minimum following distance (more in bad weather)'], ['300 ft', 'Signal before turning'],
+    ['500 ft', 'Dim high beams for oncoming cars'], ['200 ft', 'Dim high beams when following'], ['1,000 ft', 'Lights on if you can\'t see this far'],
+    ['100 ft', 'No passing near intersections, bridges, RR crossings'], ['15–50 ft', 'Where to stop at a railroad crossing']
+  ];
+  const park = [['15 ft', 'Fire hydrant'], ['20 ft', 'Crosswalk at an intersection'], ['30 ft', 'Stop sign or traffic signal'], ['50 ft', 'Railroad crossing'], ['12 in', 'Max distance from curb']];
+  const speed = [['20 mph', 'School zone (when active)'], ['25 mph', 'Business and residential districts'], ['50 mph', 'Two-lane highway'], ['55 mph', 'Four-lane highway'], ['35 mph', 'Hydroplaning can start around here']];
+  const dl = rows => `<dl class="nums">${rows.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>`;
+  const signs = [['stop', 'Octagon', 'Stop'], ['yield', 'Triangle', 'Yield'], ['pennant', 'Pennant', 'No passing zone'], ['rr', 'Circle', 'Railroad ahead'], ['cross', 'Crossbuck', 'Railroad crossing'], ['school', 'Pentagon', 'School zone'], ['warn', 'Diamond', 'Warning'], ['work', 'Orange', 'Work zone']];
+  const colors = [['#C8102E', 'Red', 'Stop, yield, prohibited'], ['#F5C400', 'Yellow', 'General warning'], ['#F28C00', 'Orange', 'Construction'], ['#C7E81E', 'Yellow-green', 'School, pedestrians'], ['#1E7B3A', 'Green', 'Directions, guide'], ['#1F4FA3', 'Blue', 'Motorist services'], ['#7A4A24', 'Brown', 'Recreation, parks'], ['#FFFFFF', 'White', 'Regulatory (speed limit)']];
+  return `<div class="sheet">
+    <div class="card"><h3>By the numbers</h3>${dl(nums)}</div>
+    <div class="card"><h3>No parking within…</h3>${dl(park)}<h3 style="margin-top:20px">Delaware speed limits</h3>${dl(speed)}</div>
+    <div class="card"><h3>Sign shapes</h3><div class="signs">${signs.map(([k, s, m]) => `<div class="sign">${signSVG(k)}<span><b>${s}</b>${m}</span></div>`).join('')}</div></div>
+    <div class="card"><h3>Sign colors</h3><div class="swatches">${colors.map(([c, n, m]) => `<div class="sw"><i style="background:${c}"></i><span><b>${n}</b><br><span class="muted">${m}</span></span></div>`).join('')}</div></div>
+    <div class="card"><h3>Emergencies</h3><ul class="list">
+      <li><b>Skid:</b> ease off the gas, steer where you want the front to go.</li>
+      <li><b>Hydroplaning:</b> ease off the gas, keep the wheel straight, no hard braking.</li>
+      <li><b>Brake failure:</b> pump the brakes, downshift, slowly apply the parking brake.</li>
+      <li><b>Blowout:</b> grip the wheel, ease off the gas, slow down gradually.</li>
+      <li><b>Stuck gas pedal:</b> shift to neutral, brake, pull off.</li>
+      <li><b>Wheels off the pavement:</b> ease off the gas, steer gently back when safe.</li>
+      <li><b>Siren behind you:</b> pull right and stop.</li></ul></div>
+    <div class="card"><h3>Right of way &amp; rules</h3><ul class="list">
+      <li><b>Uncontrolled intersection:</b> yield to the car on your right.</li>
+      <li><b>Four-way stop:</b> first to stop goes first; ties go to the right.</li>
+      <li><b>Left turn:</b> yield to oncoming traffic.</li>
+      <li><b>School bus red lights:</b> both directions stop, unless there's a median.</li>
+      <li><b>Flashing red</b> = stop sign. <b>Flashing yellow</b> = caution.</li>
+      <li><b>Yellow lines</b> separate opposite directions. <b>White lines</b> separate the same direction.</li>
+      <li><b>Bikes:</b> change lanes or give at least 3 feet.</li>
+      <li><b>Phones:</b> no handheld use; permit holders can't use any phone.</li>
+      <li><b>GDL:</b> 50 practice hours (10 at night); supervisor 25+ with 5 years licensed; no unsupervised driving 10 p.m.–6 a.m.</li></ul></div>
+  </div>`;
+}
+function renderImport(body) {
+  body.innerHTML = `
+  <div class="card setup" style="max-width:820px">
+    <div><p class="eyebrow">Study your exact Quizlet set</p><h3>Paste your cards</h3></div>
+    <ol class="steps">
+      <li>Open your Quizlet set in a browser.</li>
+      <li>Click the <b>⋯</b> (three dots) button, then <b>Export</b>.</li>
+      <li>Leave the defaults (tab between term and definition, new line between cards) and click <b>Copy text</b>.</li>
+      <li>Paste it below and click <b>Save cards</b>.</li>
+    </ol>
+    <textarea id="qz-text" placeholder="Term&#9;Definition&#10;What is the BAC limit for drivers 21+?&#9;0.08%"></textarea>
+    <div class="row" style="justify-content:flex-start;align-items:center">
+      <button class="btn primary" id="qz-save">Save cards</button>
+      ${D.qz.length ? `<button class="btn bad" id="qz-clear">Delete my ${D.qz.length} cards</button>` : ''}
+      <span class="muted" id="qz-msg" style="font-size:.9rem">${D.qz.length ? `${D.qz.length} cards saved in this browser.` : 'Cards save in this browser only.'}</span>
+    </div>
+  </div>`;
+  $('#qz-save').onclick = () => {
+    const lines = $('#qz-text').value.split(/\r?\n/);
+    const cards = [];
+    for (const ln of lines) {
+      let t, d;
+      if (ln.includes('\t')) { const k = ln.indexOf('\t'); t = ln.slice(0, k); d = ln.slice(k + 1); }
+      else if (ln.includes(' - ')) { const k = ln.indexOf(' - '); t = ln.slice(0, k); d = ln.slice(k + 3); }
+      else continue;
+      t = t.trim(); d = d.trim(); if (t && d) cards.push({ t, d });
+    }
+    if (!cards.length) { $('#qz-msg').textContent = 'No cards found. Each line needs a term, a tab (or " - "), then the definition.'; return; }
+    D.qz = cards; store.set('cram.quizlet', cards); D.src = 'mine'; updateDMeta();
+    D.mode = 'cards'; store.set('cram.dmode', 'cards'); renderDrivers();
+  };
+  const clr = $('#qz-clear');
+  if (clr) {
+    let armed = false;
+    clr.onclick = () => {
+      if (!armed) { armed = true; clr.textContent = 'Click again to delete'; return; }
+      D.qz = []; store.set('cram.quizlet', []); D.src = 'dmv'; updateDMeta(); renderDrivers();
+    };
+  }
+}
+function renderDrivers() {
+  setPressed($('#d-mode'), D.mode);
+  const src = $('#d-src');
+  if (D.qz.length && (D.mode === 'cards' || D.mode === 'test')) {
+    src.hidden = false;
+    src.innerHTML = `<button class="chip" data-v="dmv">Delaware set (${DRIVERS.length})</button><button class="chip" data-v="mine">My Quizlet cards (${D.qz.length})</button>`;
+    setPressed(src, D.src);
+  } else { src.hidden = true; if (!D.qz.length) D.src = 'dmv'; }
+  const body = $('#d-body'); keyHandlers.drivers = null;
+  const banner = !D.qz.length && D.mode !== 'import' ? `<div class="note-banner" style="margin-bottom:16px"><p>These questions come from the Delaware Driver Manual, because Quizlet doesn't let outside sites read its sets. To study your exact Quizlet cards too, paste them in.</p><button class="btn" data-go="import">Add my cards</button></div>` : '';
+  if (D.mode === 'sheet') { body.innerHTML = banner + cheatSheet(); }
+  else if (D.mode === 'import') { renderImport(body); }
+  else {
+    body.innerHTML = banner + '<div id="d-area"></div>';
+    const area = $('#d-area');
+    if (D.mode === 'cards') {
+      Flashcards(area, dItems(), 'drivers', {
+        swapLabel: 'Answer first',
+        isKnown: id => D.known.has(id),
+        setKnown: (id, y) => { if (y) D.known.add(id); else D.known.delete(id); store.set('cram.dknown', [...D.known]); }
+      });
+    } else {
+      if (D.src === 'mine' && D.qz.length < 4) { area.innerHTML = `<div class="card empty">You need at least 4 cards for a multiple-choice test. Use flashcards for now.</div>`; }
+      else Quiz(area, () => dQuestions().slice(0, 25), 'drivers');
+    }
+  }
+  const go = $('[data-go]', body); if (go) go.onclick = () => { D.mode = 'import'; renderDrivers(); };
+}
+
+/* ================= math ================= */
+const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a || 1; };
+const F = (n, d = 1) => { if (d < 0) { n = -n; d = -d; } const g = gcd(n, d); return { n: n / g, d: d / g }; };
+const fsub = (a, b) => F(a.n * b.d - b.n * a.d, a.d * b.d);
+const fadd = (a, b) => F(a.n * b.d + b.n * a.d, a.d * b.d);
+const fmul = (a, b) => F(a.n * b.n, a.d * b.d);
+const fneg = f => ({ n: -f.n, d: f.d });
+const fabs = f => ({ n: Math.abs(f.n), d: f.d });
+const fh = f => { const a = Math.abs(f.n); const s = f.d === 1 ? String(a) : `<span class="fr"><sup>${a}</sup><span class="fs">/</span><sub>${f.d}</sub></span>`; return (f.n < 0 ? '−' : '') + s; };
+const sgn = f => (f.n < 0 ? ' − ' : ' + ') + fh(fabs(f));
+const num = n => (n < 0 ? '−' : '') + Math.abs(n);
+const mm = s => `<span class="m">${s}</span>`;
+function quad(b, c) {
+  let s = 'x²';
+  if (b.n !== 0) s += (b.n < 0 ? ' − ' : ' + ') + (Math.abs(b.n) === 1 && b.d === 1 ? '' : fh(fabs(b))) + 'x';
+  if (c === null) s += ' + <span class="blank">?</span>';
+  else if (c.n !== 0) s += sgn(c);
+  return s;
+}
+const sq = h => `(x${sgn(h)})²`;
+const vform = (h, k) => sq(h) + (k.n !== 0 ? sgn(k) : '');
+const ri = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+const nz = (a, b) => { let v; do { v = ri(a, b); } while (v === 0); return v; };
+function randB(par) {
+  if (par === 'any') par = Math.random() < .5 ? 'even' : 'odd';
+  let b; do { b = ri(-20, 20); } while (b === 0 || (b % 2 === 0) !== (par === 'even'));
+  return b;
+}
+function simpRoot(r) { if (r <= 0) return null; let s = 1; for (let k = Math.floor(Math.sqrt(r)); k >= 2; k--) if (r % (k * k) === 0) { s = k; break; } return [s, r / (s * s)]; }
+function rootStr(base, sr) {
+  if (!sr) return null;
+  const [s, m] = sr;
+  if (m === 1) { const a = base + s, b = base - s; return a === b ? `x = ${num(a)}` : `x = ${num(Math.max(a, b))} or x = ${num(Math.min(a, b))}`; }
+  return `x = ${base !== 0 ? num(base) + ' ' : ''}± ${s > 1 ? s : ''}√<span class="rad">${m}</span>`;
+}
+const GEN = {
+  constant() {
+    const b = randB('any'), B = F(b), h = F(b, 2), c = fmul(h, h);
+    const wr = [F(Math.abs(b), 2), F(b * b), F(b * b, 2), F(2 * Math.abs(b)), F(Math.abs(b)), F(b * b, 8)].map(f => mm(fh(f)));
+    return mc(`<p class="q-label">What constant completes the square?</p><p class="q-math">${mm(quad(B, null))}</p>`, mm(fh(c)), wr,
+      `Half of ${mm(fh(B))} is ${mm(fh(h))}. Square it: ${mm('(' + fh(h) + ')² = ' + fh(c))}.<br>So ${mm(quad(B, c) + ' = ' + sq(h))}.`);
+  },
+  square() {
+    const b = randB('any'), B = F(b), h = F(b, 2), c = fmul(h, h);
+    const wr = [sq(fneg(h)), sq(B), `(x${sgn(h)})(x${sgn(fneg(h))})`, sq(c), `(x${sgn(fneg(c))})²`].map(mm);
+    return mc(`<p class="q-label">Factor this perfect-square trinomial</p><p class="q-math">${mm(quad(B, c))}</p>`, mm(sq(h)), wr,
+      `The number inside is half of b: half of ${mm(fh(B))} is ${mm(fh(h))}. Check: ${mm('(' + fh(h) + ')² = ' + fh(c))}. The sign inside matches the sign of b.`);
+  },
+  even() { return completeQ('even'); },
+  mixed() { return completeQ('any'); },
+  solve() {
+    const hh = nz(-8, 8), rs = [1, 4, 9, 16, 25, 36, 2, 3, 5, 6, 7, 8, 10, 11, 12, 13, 18, 20];
+    const r = rs[ri(0, rs.length - 1)], c = hh * hh - r, B = F(2 * hh), H = F(hh);
+    const ans = rootStr(-hh, simpRoot(r));
+    const raw = r === 1 ? null : (Number.isInteger(Math.sqrt(r)) ? `x = ${num(-hh + r)} or x = ${num(-hh - r)}` : `x = ${hh !== 0 ? num(-hh) + ' ' : ''}± ${r}`);
+    const wr = [rootStr(hh, simpRoot(r)), rootStr(-hh, simpRoot(-c)), rootStr(-2 * hh, simpRoot(r)), raw, rootStr(hh, simpRoot(-c)), rootStr(-hh, simpRoot(r + 2 * hh * hh))].filter(Boolean).map(mm);
+    const steps = `<ol>
+      <li>Move c to the other side: ${mm(quad(B, F(0)) + ' = ' + num(-c))}</li>
+      <li>Add ${mm('(b/2)² = ' + (hh * hh))} to both sides: ${mm(quad(B, F(hh * hh)) + ' = ' + num(-c) + ' + ' + (hh * hh))}</li>
+      <li>Factor: ${mm(sq(H) + ' = ' + r)}</li>
+      <li>Square root both sides: ${mm('x' + sgn(H) + ' = ±√<span class="rad">' + r + '</span>')}</li>
+      <li>Solve: ${mm(ans)}</li></ol>`;
+    return mc(`<p class="q-label">Solve by completing the square</p><p class="q-math">${mm(quad(B, F(c)) + ' = 0')}</p>`, mm(ans), wr, steps);
+  }
+};
+function completeQ(par) {
+  const b = randB(par), c = F(nz(-15, 15)), B = F(b), h = F(b, 2), h2 = fmul(h, h), k = fsub(c, h2);
+  const correct = mm(vform(h, k));
+  const wr = [vform(h, fadd(c, h2)), vform(fneg(h), k), vform(fneg(h), fadd(c, h2)), vform(B, fsub(c, F(b * b))), vform(h, c), vform(h, fsub(h2, c))].map(mm);
+  const cShow = h2.d !== 1 ? `<span class="fr"><sup>${Math.abs(c.n * h2.d)}</sup><sub>${h2.d}</sub></span>` : fh(fabs(c));
+  const steps = `<ol>
+    <li>Half of ${mm(fh(B))} is ${mm(fh(h))}. Square it: ${mm(fh(h2))}.</li>
+    <li>Add and subtract it: ${mm(quad(B, h2) + ' − ' + fh(h2) + sgn(c))}</li>
+    <li>Factor the first three terms: ${mm(sq(h) + ' − ' + fh(h2) + (c.n < 0 ? ' − ' : ' + ') + cShow)}</li>
+    <li>Combine the numbers: ${correct}</li></ol>`;
+  return mc(`<p class="q-label">Complete the square. Write in the form (x + h)² + k</p><p class="q-math">${mm(quad(B, c))}</p>`, correct, wr, steps);
+}
+const TOPICS = [
+  { id: 'constant', label: 'Find the constant', sub: 'x² + bx + ?' },
+  { id: 'square', label: 'Write as a square', sub: 'x² + bx + c = (x + h)²' },
+  { id: 'even', label: 'Complete the square: even b', sub: 'multiple choice' },
+  { id: 'mixed', label: 'Complete the square: even/odd b', sub: 'multiple choice' },
+  { id: 'solve', label: 'Solve by completing the square', sub: 'bonus · x = ?' }
+];
+$('#m-topics').innerHTML = TOPICS.map(t => `<button class="topic" data-v="${t.id}"><b>${t.label}</b><small>${t.sub}</small></button>`).join('');
+$('#m-topics').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { M.topic = b.dataset.v; store.set('cram.mtopic', M.topic); renderMath(); } });
+function renderMath() {
+  if (!GEN[M.topic]) M.topic = 'constant';
+  setPressed($('#m-topics'), M.topic);
+  Quiz($('#m-body'), () => Array.from({ length: 10 }, () => GEN[M.topic]()), 'math');
+}
+
+/* ================= boot ================= */
+updateDMeta();
+renderVocab(); renderDrivers(); renderMath();
+setTab(location.hash ? location.hash.slice(1) : store.get('cram.tab', 'vocab'));
+</script>
+
+</body>
+</html>
