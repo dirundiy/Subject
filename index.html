@@ -304,16 +304,6 @@ textarea:focus{outline:none;border-color:var(--accent)}
       <div id="v-body"></div>
     </section>
 
-    <section class="panel" id="p-drivers" role="tabpanel" aria-labelledby="tab-drivers" hidden>
-      <div class="toolbar">
-        <div class="seg" id="d-mode">
-          <button data-v="cards">Flashcards</button><button data-v="test">Practice test</button><button data-v="sheet">Cheat sheet</button>
-        </div>
-        <div class="chips" id="d-src"></div>
-      </div>
-      <div id="d-body"></div>
-    </section>
-
     <section class="panel" id="p-math" role="tabpanel" aria-labelledby="tab-math" hidden>
       <div class="mathgrid">
         <div class="panel">
@@ -487,155 +477,8 @@ for (const u of [1, 2, 3]) VOCAB_RAW[u].forEach(([word, pos, def, ex, syn, tip])
 const exHTML = w => esc(w.ex).replace(/\{(.+?)\}/, '<b>$1</b>');
 const exBlank = w => esc(w.ex).replace(/\{(.+?)\}/, '<span class="gap"></span>');
 
-/* ================= driver's ed data (Delaware Driver Manual) ================= */
-const DRIVERS = [
-{q:"In Delaware, what is the legal blood alcohol concentration (BAC) limit for drivers 21 and older?",a:"0.08%",w:["0.10%","0.05%","0.02%"],why:"At 0.08% or higher you are legally DUI. You can still be charged below 0.08 if you're impaired."},
-{q:"What is the BAC limit for drivers under 21 in Delaware?",a:"0.02%",w:["0.08%","0.05%","0.00% with no exceptions"],why:"Delaware's zero-tolerance law for under-21 drivers sets the limit at 0.02%."},
-{q:"What does Delaware's implied consent law mean?",a:"By driving, you have agreed to a chemical test for alcohol or drugs if an officer asks",w:["You must consent before police can search your car","You consent to a breath test only if you were in a crash","You can refuse a test with no penalty"],why:"Getting a license means you've already agreed to testing. Refusing leads to automatic license revocation."},
-{q:"What is the penalty for refusing a chemical test the first time in Delaware?",a:"License revoked for 1 year",w:["A warning","License suspended for 30 days","A $50 fine only"],why:"A first refusal brings a 1-year revocation, with longer revocations for repeat refusals."},
-{q:"What is the only thing that sobers a person up?",a:"Time",w:["Black coffee","A cold shower","Eating a big meal"],why:"The liver removes alcohol at a fixed rate. Coffee and showers do nothing to lower BAC."},
-{q:"About how long does the body take to process one standard drink?",a:"About 1 hour",w:["About 15 minutes","About 3 hours","About 30 minutes"],why:"Roughly one drink per hour, no matter how big the person is or what they do."},
-{q:"Which drinks contain about the same amount of alcohol?",a:"12 oz of beer, 5 oz of wine, and 1.5 oz of 80-proof liquor",w:["12 oz of beer, 12 oz of wine, and 12 oz of liquor","A pint of beer and a shot of liquor only","Beer always has less alcohol than wine or liquor"],why:"Each of these is one standard drink."},
-{q:"Alcohol first affects which driving skill?",a:"Judgment",w:["Vision","Hearing","Muscle strength"],why:"Judgment goes first, which is why impaired drivers often think they're fine to drive."},
-{q:"Under good conditions, what is the minimum following distance behind the car ahead?",a:"3 seconds",w:["1 second","One car length","Half a second"],why:"Pick a fixed object and count. Add more time at night, in rain or snow, or behind trucks and motorcycles."},
-{q:"How far before a turn must you signal in Delaware?",a:"At least 300 feet",w:["At least 100 feet","At least 50 feet","At least 500 feet"],why:"Delaware law requires a turn signal for at least the last 300 feet before you turn."},
-{q:"When must you dim your high beams for an oncoming vehicle?",a:"Within 500 feet",w:["Within 200 feet","Within 1,000 feet","Within 100 feet"],why:"Dim within 500 feet of oncoming traffic."},
-{q:"When following another vehicle, you must dim your high beams within:",a:"200 feet",w:["500 feet","50 feet","1,000 feet"],why:"Your high beams glare in the other driver's mirrors."},
-{q:"When must you turn on your headlights in Delaware?",a:"From sunset to sunrise, when you can't see 1,000 feet ahead, and whenever your wipers are on because of weather",w:["Only after dark","Only when it's raining hard","From one hour after sunset until one hour before sunrise"],why:"Delaware has a wipers-on, lights-on rule."},
-{q:"In fog, you should use your:",a:"Low beams",w:["High beams","Parking lights only","Hazard lights while driving at normal speed"],why:"High beams reflect off fog and make visibility worse."},
-{q:"You may not park within how many feet of a fire hydrant?",a:"15 feet",w:["10 feet","20 feet","30 feet"],why:"Keep 15 feet clear so firefighters can reach the hydrant."},
-{q:"You may not park within how many feet of a crosswalk at an intersection?",a:"20 feet",w:["15 feet","10 feet","50 feet"],why:"Cars parked too close hide pedestrians from other drivers."},
-{q:"You may not park within how many feet of a stop sign or traffic signal?",a:"30 feet",w:["20 feet","15 feet","50 feet"],why:"Parked cars would block the sign or signal."},
-{q:"You may not park within how many feet of a railroad crossing?",a:"50 feet",w:["30 feet","15 feet","100 feet"],why:"50 feet from the nearest rail."},
-{q:"When parallel parking, your wheels must be within how far of the curb?",a:"12 inches",w:["6 inches","18 inches","24 inches"],why:"Within 12 inches, parallel to the curb."},
-{q:"When stopping for a train at a railroad crossing, stop:",a:"Between 15 and 50 feet from the nearest rail",w:["Right at the tracks","At least 100 feet away","Between 5 and 10 feet from the tracks"],why:"Trains overhang the rails, so never stop closer than 15 feet."},
-{q:"A school bus has its red lights flashing on a two-lane road. What must you do?",a:"Stop, whether you're behind it or coming toward it, and wait until the lights stop",w:["Slow down and pass carefully","Stop only if you are behind the bus","Stop only if children are visible"],why:"On an undivided road, traffic in both directions stops."},
-{q:"When do you NOT have to stop for a school bus with flashing red lights?",a:"When you're on the other side of a highway with 4 or more lanes and a median",w:["When no children are visible","When you're running late","When the bus is on a two-lane road and you're coming toward it"],why:"A median on a 4+ lane highway means opposite-direction traffic may continue carefully."},
-{q:"A school bus has flashing yellow (amber) lights. This means:",a:"Slow down and prepare to stop; the bus is about to stop",w:["Pass quickly before it stops","The bus is done loading","Nothing for other drivers"],why:"Yellow lights come on before the red lights and stop arm."},
-{q:"Unless posted otherwise, the speed limit in a Delaware business or residential district is:",a:"25 mph",w:["35 mph","30 mph","20 mph"],why:"25 mph in business and residential districts."},
-{q:"The speed limit in a Delaware school zone when the signs are active is:",a:"20 mph",w:["15 mph","25 mph","10 mph"],why:"20 mph when the school zone sign or lights say so."},
-{q:"Unless posted, the speed limit on a two-lane Delaware highway is:",a:"50 mph",w:["55 mph","45 mph","65 mph"],why:"Two-lane roads: 50 mph. Four-lane roads: 55 mph. Some highways are posted at 65."},
-{q:"Unless posted, the speed limit on a four-lane Delaware highway is:",a:"55 mph",w:["50 mph","65 mph","60 mph"],why:"Four-lane roads default to 55 mph."},
-{q:"The basic speed law says:",a:"Never drive faster than is safe for current conditions, even if you're under the limit",w:["You may go 5 mph over the limit","You must always drive exactly the speed limit","Minimum speed is half the speed limit"],why:"In rain, fog or heavy traffic, the posted limit can still be too fast."},
-{q:"Two cars arrive at an uncontrolled intersection at the same time. Who goes first?",a:"The car on the right",w:["The car on the left","The bigger vehicle","Whoever is going straight, always"],why:"Yield to the driver on your right."},
-{q:"At a four-way stop, who has the right of way?",a:"The first vehicle to come to a complete stop; if tied, the vehicle on the right",w:["The vehicle on the main road","The vehicle turning left","The fastest vehicle"],why:"First to stop goes first."},
-{q:"When turning left at an intersection, you must yield to:",a:"Oncoming traffic and pedestrians",w:["No one if you have a green light","Only vehicles turning right","Only emergency vehicles"],why:"A green light does not give left turns the right of way. Wait for a gap."},
-{q:"An emergency vehicle with its siren and lights on is coming toward you. You should:",a:"Pull to the right edge of the road and stop until it passes",w:["Speed up to get out of the way","Stop in your lane immediately","Pull to the left"],why:"Stay stopped until it passes, and never follow closer than 500 feet."},
-{q:"Delaware's Move Over law requires you to:",a:"Move over a lane, or slow down if you can't, when passing a stopped emergency vehicle, tow truck or highway worker with flashing lights",w:["Move to the left lane on all highways","Pull off the road for every police car you see","Change lanes only when told to by police"],why:"It protects people working at the roadside."},
-{q:"A flashing red traffic light means:",a:"Come to a complete stop, then go when safe, like a stop sign",w:["Slow down and proceed","The light is broken, so ignore it","Stop only if cars are coming"],why:"Treat it exactly like a stop sign."},
-{q:"A flashing yellow traffic light means:",a:"Slow down and proceed with caution",w:["Come to a complete stop","Speed up to clear the intersection","Pedestrians only"],why:"No stop needed, but be careful."},
-{q:"Is a right turn on red allowed in Delaware?",a:"Yes, after a complete stop and yielding, unless a sign prohibits it",w:["Never","Only at night","Yes, without stopping"],why:"Stop fully, yield to pedestrians and traffic, then turn."},
-{q:"A solid yellow line on your side of the center line means:",a:"No passing",w:["Passing is allowed","Lane for turning only","Slow down"],why:"Broken yellow on your side means you may pass when it's safe."},
-{q:"Yellow lines on the road separate:",a:"Traffic moving in opposite directions",w:["Traffic moving in the same direction","Bike lanes from car lanes","Parking areas"],why:"White lines separate lanes going the same direction."},
-{q:"You may not pass within how many feet of an intersection, bridge or railroad crossing?",a:"100 feet",w:["50 feet","500 feet","25 feet"],why:"You can't see what's coming in these spots."},
-{q:"What shape is a stop sign?",a:"Octagon (8 sides)",w:["Triangle","Diamond","Pentagon"],why:"It's the only eight-sided sign, so you can recognize it even from behind or covered in snow."},
-{q:"A pennant-shaped (sideways triangle) sign means:",a:"No passing zone",w:["Yield","School zone","Railroad crossing ahead"],why:"It's posted on the left side of the road where the no-passing zone begins."},
-{q:"A round yellow sign with an X and “RR” means:",a:"Railroad crossing ahead",w:["Road closed","Rest area","Stop ahead"],why:"It warns you before you reach the crossing. The crossbuck (white X) marks the crossing itself."},
-{q:"A five-sided (pentagon) sign means:",a:"School zone or school crossing",w:["No passing","Construction","Hospital ahead"],why:"Pentagons are only used near schools."},
-{q:"Orange signs are used for:",a:"Construction and work zones",w:["Recreation areas","Motorist services","School zones"],why:"Fines are often doubled in work zones."},
-{q:"Diamond-shaped signs are:",a:"Warning signs",w:["Regulatory signs","Guide signs","Service signs"],why:"They warn of hazards ahead such as curves, merges, or deer."},
-{q:"At what speed can your tires begin to hydroplane on a wet road?",a:"About 35 mph",w:["About 65 mph","About 15 mph","Only above 55 mph"],why:"If you hydroplane, ease off the gas, keep the wheel straight, and don't slam the brakes."},
-{q:"If your car begins to skid, you should:",a:"Ease off the gas and steer in the direction you want the front of the car to go",w:["Slam on the brakes","Steer hard the opposite way","Accelerate out of it"],why:"Don't overcorrect. Look and steer where you want to go."},
-{q:"If your brakes fail, you should first:",a:"Pump the brake pedal, then downshift and slowly apply the parking brake",w:["Turn the engine off","Swerve onto the shoulder at full speed","Put the car in park"],why:"Pumping may build pressure. A lower gear and the parking brake help slow you."},
-{q:"If a tire blows out, you should:",a:"Hold the wheel firmly, ease off the gas, and slow down gradually before pulling off",w:["Brake hard right away","Turn sharply to the shoulder","Speed up to keep control"],why:"Hard braking or steering can make you lose control."},
-{q:"If your right wheels drift off the pavement, you should:",a:"Ease off the gas, keep steering straight, and gently return to the road when it's safe",w:["Jerk the wheel back onto the road immediately","Slam on the brakes","Speed up"],why:"Jerking the wheel can send you into oncoming traffic."},
-{q:"If your gas pedal sticks, you should:",a:"Shift into neutral, brake, and pull off the road",w:["Turn off the ignition right away while moving","Pump the gas pedal","Put the car in park"],why:"Turning the key all the way off can lock the steering."},
-{q:"Recommended hand position on the steering wheel is:",a:"9 and 3 (or 8 and 4)",w:["10 and 2","12 o'clock with one hand","Hands at the bottom of the wheel"],why:"Lower positions keep your arms out of the way if the airbag deploys."},
-{q:"Before changing lanes, you should check your mirrors and:",a:"Turn your head to check your blind spot",w:["Honk your horn","Flash your headlights","Speed up first"],why:"Mirrors don't show everything."},
-{q:"You miss your exit on the highway. You should:",a:"Continue to the next exit",w:["Back up on the shoulder","Make a U-turn through the median","Stop and wait for a gap to reverse"],why:"Never back up or turn around on a highway."},
-{q:"When entering a highway from an on-ramp, you should:",a:"Use the acceleration lane to match the speed of traffic, then merge into a gap",w:["Stop at the end of the ramp","Merge slowly at 30 mph","Expect highway traffic to yield to you"],why:"Merge at highway speed. Traffic already on the highway has the right of way."},
-{q:"Large trucks have big blind spots called no-zones. A good rule is:",a:"If you can't see the truck driver in their mirror, they can't see you",w:["Trucks can see all around them","It's safest to ride right behind a truck","Pass trucks on the right"],why:"Don't linger beside or right behind a truck, and don't cut in front of it."},
-{q:"When passing a bicyclist, Delaware drivers must:",a:"Change lanes if possible, or leave at least 3 feet",w:["Honk to warn them","Pass as closely as possible","Stay behind them until they turn"],why:"Bicyclists have the same right to the road as drivers."},
-{q:"A pedestrian is carrying a white cane or using a guide dog. You must:",a:"Always yield to them",w:["Honk so they know you're there","Yield only in a crosswalk","Drive around them"],why:"These signal a person who is blind or visually impaired."},
-{q:"Who must wear a seat belt in Delaware?",a:"The driver and every passenger, in every seat",w:["Only the driver","Only front-seat occupants","Only passengers under 16"],why:"Delaware's seat belt law is primary, so police can pull you over for not wearing one."},
-{q:"In Delaware, children must ride in a child safety seat or booster until they are:",a:"8 years old or 65 pounds",w:["4 years old or 40 pounds","12 years old","10 years old or 80 pounds"],why:"Children under 12 (or 65 pounds) should ride in the back seat if the car has a passenger airbag."},
-{q:"Delaware's cell phone law says drivers:",a:"May not use a handheld phone while driving",w:["May text at red lights","May use a handheld phone under 25 mph","May use a handheld phone on highways only"],why:"Permit holders and new drivers may not use any phone, even hands-free."},
-{q:"Under Delaware's GDL program, how many hours of supervised practice does a learner need?",a:"50 hours, including 10 at night",w:["30 hours, including 5 at night","25 hours, all during the day","100 hours, including 20 at night"],why:"The hours are logged with your supervising driver."},
-{q:"Who may supervise a Delaware learner's permit driver?",a:"A licensed driver at least 25 years old who has held a license for at least 5 years",w:["Any licensed driver 18 or older","Any adult passenger","A licensed driver 21 or older"],why:"The supervisor sits in the front passenger seat."},
-{q:"During the second six months of a Delaware Level 1 permit, unsupervised driving is not allowed between:",a:"10 p.m. and 6 a.m.",w:["Midnight and 5 a.m.","9 p.m. and 5 a.m.","11 p.m. and 7 a.m."],why:"Nighttime driving is riskier for new drivers."}
-];
-
-/* ================= class review set (from the student's Quizlet export) ================= */
-const CLASS = [
-{q:"What is the seatbelt law in Delaware?",a:"All occupants of a motor vehicle must be wearing a seat belt",w:["Only the driver must wear a seat belt","Only front-seat occupants must wear seat belts","Only passengers under 16 must wear seat belts"]},
-{q:"What do solid yellow lines mean?",a:"Passing is not allowed, and traffic is moving in different directions",w:["Passing is allowed when safe, and traffic moves the same direction","Traffic is moving in the same direction, and passing is not allowed","The lane is for turning only"]},
-{q:"Right turns on red:",a:"Allowed unless a sign makes them illegal",w:["Never allowed in Delaware","Allowed only at night","Allowed without stopping first"],why:"Always come to a complete stop first."},
-{q:"What should you do when approached by an emergency vehicle with flashing lights?",a:"Pull over to the right if possible, but most importantly, get out of the way",w:["Speed up to stay ahead of it","Stop immediately in your lane no matter what","Pull onto the left shoulder"]},
-{q:"Green signal",a:"Proceed with caution",w:["Stop","Prepare to stop","Go fast; you always have the right of way"]},
-{q:"Yellow signal",a:"Prepare to stop; if too close to stop, proceed with caution",w:["Speed up to beat the red light","Come to a complete stop no matter what","Proceed; it means the same as green"]},
-{q:"Red signal",a:"Come to a complete stop. Right on red is allowed unless a sign says otherwise, and left on red from a one-way street onto another one-way street is allowed unless a sign says otherwise",w:["Stop. No turns of any kind are ever allowed","Slow down and go if the intersection is clear","Stop. Left turns on red are allowed from any street"]},
-{q:"What is the penalty for failure to stop at the command of a police officer?",a:"Revocation of license",w:["A warning","A $25 fine","2 points on your record"]},
-{q:"If skidding, where do you steer?",a:"Steer in the direction you want to go",w:["Steer the opposite way from where you want to go","Don't steer; slam on the brakes","Let go of the wheel"]},
-{q:"What do you need to bring to the DMV to get your GDL license?",a:"$40, birth certificate, Social Security card, and two proofs of address",w:["$20 and your school ID","$40 and one proof of address","Birth certificate only, with no fee"]},
-{q:"When is the only time you do not have to stop for a school bus with flashing lights on?",a:"If you are on the other side of a highway with 4 or more lanes and a median",w:["When no children are visible","When you're on the other side of any two-lane road","When you're late for school"]},
-{q:"What does the \"No Zone\" refer to?",a:"The blind spots around a truck where crashes are more likely to occur",w:["An area where parking is prohibited","A lane that trucks may not use","A zone where passing is not allowed"]},
-{q:"How many DUI offenses do you need to be required to get an Ignition Interlock Device?",a:"1 offense",w:["2 offenses","3 offenses","Only if someone was injured"]},
-{q:"When do you start braking when exiting a high-speed expressway?",a:"In the exit lane",w:["In the travel lane, before the exit","Only at the end of the ramp","Before you signal"]},
-{q:"When are you permitted to make a left turn on red? (diagram on the test)",a:"When going from a one-way street onto another one-way street",w:["Any time no cars are coming","From a two-way street onto a one-way street","Never; left on red is always illegal"],why:"Your class notes: stick all the way to the outside, since we drive on the right side of the road.",d:"one"},
-{q:"Should a driver slow down, scan the area, and proceed with caution when children are present?",a:"Yes",w:["No, only in marked school zones","Only if the children are in a crosswalk","Only during school hours"]},
-{q:"When do headlights need to be used?",a:"When it is raining, when it's dark, and whenever the wipers are on",w:["Only after dark","Only on highways","Only in fog"]},
-{q:"What does the amount of traction a car has depend on?",a:"The brakes, the tires, and the road surface",w:["The engine size and the speed limit","The weight of the driver","The fuel type and the steering wheel"]},
-{q:"What is the penalty for anyone under 21 who consumes or possesses alcohol?",a:"May have license revoked for 30 days",w:["A warning only","License revoked for 5 years","No penalty if you weren't driving"]},
-{q:"What kind of line markings would allow you to legally pass another car?",a:"A broken yellow line on your side of the road or in the middle",w:["A solid yellow line on your side","Double solid yellow lines","A solid white line"]},
-{q:"Describe what a driver should do when approaching a roundabout.",a:"Yield to drivers already in the roundabout",w:["Drivers entering have the right of way","Stop and wait until the roundabout is empty","Enter by turning left"]},
-{q:"When approaching a curve, when do you slow down?",a:"Before the curve",w:["In the middle of the curve","After the curve","Brake hard while turning"]},
-{q:"What is the best practice when a driver is being pulled over by the police?",a:"Stay calm, keep your hands visible, and do what the officer asks",w:["Get out and walk to the officer's car","Reach under the seat for your papers right away","Argue the ticket at the roadside"]},
-{q:"What is the minimum following distance a driver should maintain from other vehicles?",a:"3 seconds",w:["1 second","2 car lengths","10 seconds"]},
-{q:"Know the penalty for driving 20 mph over the speed limit.",a:"5 points and possible license suspension",w:["2 points and a warning","A fine only, no points","12 points and automatic jail time"]},
-{q:"If you run off the pavement, you should not brake hard. What should you do?",a:"Take your foot off the gas pedal and grip the steering wheel tightly",w:["Brake hard right away","Jerk the wheel back onto the road","Speed up to get back on the road"]},
-{q:"Should you increase or decrease your following distance in bad weather?",a:"Increase",w:["Decrease","Keep it the same","Follow closer so you can see their lights"]},
-{q:"After you pass a car, when do you know it is safe to pull back into the lane?",a:"When you are clear of the other vehicle",w:["As soon as your front bumper passes theirs","When the other driver honks","After counting to one"],why:"A good check: you can see the whole car you passed in your rearview mirror."},
-{q:"A flashing red light should be treated like a…",a:"Stop sign",w:["Yield sign","Green light","Speed bump"]},
-{q:"If you are pulled over, what 3 documents will you be asked to provide?",a:"Registration, license, and insurance card",w:["Birth certificate, license, and report card","Social Security card, registration, and title","Passport, license, and car title"]},
-{q:"The best way to check your blind spot when making a lane change is to…",a:"Look over your shoulder",w:["Use the rearview mirror only","Use the side mirror only","Honk and then change lanes"]},
-{q:"What should you do if you hit a parked car and can't find the owner?",a:"Leave a note with your contact information and the date and time of the accident",w:["Drive away if the damage is small","Wait 5 minutes, then leave","Leave a note with only your first name"]},
-{q:"Know the proper path to make a left turn: one-way street onto a one-way street (diagram)",a:"Start in the far-left lane and turn into the far-left lane",w:["Start in the right lane and turn into the left lane","Start in the left lane and swing wide into the far-right lane","Turn into whichever lane is open"],d:"one"},
-{q:"Know the proper path to make a left turn: one-way street onto a two-way street (diagram)",a:"Start in the far-left lane and turn into the lane just right of the center line",w:["Turn into the lane left of the center line","Start in the right lane and cut across into the far-right lane","Turn into any lane, as long as you signal"],d:"two"},
-{q:"What is the meaning of a light that is a red round disk and a green arrow?",a:"Turns are allowed with caution in the direction of the arrow; through traffic is stopped; turns the other way are allowed unless a sign says otherwise",w:["Everyone may go straight","All traffic must stop, including turns","Only U-turns are allowed"]},
-{q:"What is the meaning of a light that is a yellow round disk?",a:"Prepare to stop, but if too close to the intersection, proceed with caution",w:["Speed up to beat the red light","Stop immediately no matter how close you are","Same as green"]},
-{q:"What is the meaning of a light that is a solid yellow arrow and a green round disk?",a:"Cars turning in the arrow's direction prepare to stop (if too close, turn with caution); through traffic and turns the other way proceed with caution",w:["Everyone must stop","Cars turning in the arrow's direction now have the right of way","Through traffic must stop; only turning cars may go"]},
-{q:"What is the meaning of a light that is a green round disk?",a:"Proceed with caution",w:["Stop","Prepare to stop","Turning traffic only"]},
-{q:"Which sign is red and white and an upside-down triangle?",a:"Yield",w:["Stop","No passing","Railroad crossing"]},
-{q:"Which sign is red and white and an octagon?",a:"Stop",w:["Yield","Do not enter","Wrong way"]},
-{q:"Which sign is a crossbuck (X shape), white and black?",a:"Railroad crossing",w:["Intersection ahead","Hospital","No parking"]},
-{q:"Which sign is a shield with blue, red, and white?",a:"Interstate",w:["U.S. route","State route","Hospital"]},
-{q:"If two cars arrive at a stop sign at the same time, which car has the right of way?",a:"The car to the right",w:["The car to the left","The bigger vehicle","The car that honks first"]},
-{q:"If two cars are at the intersection, does the turning vehicle or the vehicle going straight have the right of way?",a:"The turning vehicle",w:["Neither; both must wait","Whichever car is bigger","Whichever car honks first"],why:"This is the answer on your class set. The next card says the car going straight has the right of way at a green light, so ask your teacher if this one comes up."},
-{q:"At a green light, would a car going straight or a car that is turning have the right of way?",a:"The car going straight",w:["The car that is turning","Whoever got there first","The bigger vehicle"]},
-{q:"True or false: when a car is merging onto the road, you should, if possible, change lanes to the left to clear the way.",a:"True",w:["False","False, unless the merging car honks","Only for trucks"]},
-{q:"What are the steps to make a proper lane change?",a:"Signal, check the side mirror, check the rearview mirror, check your blind spot, then change lanes",w:["Change lanes, then signal","Check the rearview mirror and change lanes without signaling","Honk, speed up, and change lanes"]},
-{q:"What do you do to follow the Move Over law?",a:"For an approaching emergency vehicle, move to the far right (or out of the way). When passing stopped emergency, DelDOT, utility, or construction workers, move over a lane away from them",w:["Stop in your lane until every emergency vehicle leaves","Speed up so you pass stopped crews quickly","Flash your high beams to warn road crews"]},
-{q:"What is the proper procedure to use a shared center lane?",a:"Signal left, enter the lane when safe, and make the left turn when it is safe",w:["Use it as a passing lane","Drive in it for a mile before turning","Enter it without signaling"]},
-{q:"What is the color of regulatory signs?",a:"White and black",w:["Yellow and black","Orange and black","Green and white"]},
-{q:"What is the color of warning signs?",a:"Yellow and black",w:["White and black","Orange and black","Brown and white"]},
-{q:"What is the color of construction signs?",a:"Orange and black",w:["Yellow and black","Red and white","Blue and white"]},
-{q:"What is the color of guide signs?",a:"Green",w:["Blue","Brown","Orange"]},
-{q:"What is the color of recreation signs?",a:"Brown",w:["Green","Blue","Yellow"]},
-{q:"What is the color of service signs?",a:"Blue",w:["Green","Brown","White"]}
-];
-function turnSVG(kind) {
-  const two = kind === 'two';
-  const dash = (x1, y1, x2, y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="#fff" stroke-width="2" stroke-dasharray="8 7"/>`;
-  const yel = (x1, x2) => `<line x1="${x1}" y1="107" x2="${x2}" y2="107" stroke="#F5C400" stroke-width="2"/><line x1="${x1}" y1="113" x2="${x2}" y2="113" stroke="#F5C400" stroke-width="2"/>`;
-  const ar = (x, y, t) => `<text x="${x}" y="${y}" text-anchor="middle" font-size="15" font-weight="700" fill="#fff" font-family="Arial, sans-serif">${t}</text>`;
-  return `<svg viewBox="0 0 220 220" role="img" aria-label="Left turn from a one-way street onto a ${two ? 'two-way' : 'one-way'} street">
-    <defs><marker id="ah-${kind}" viewBox="0 0 10 10" refX="5" refY="5" markerWidth="3.2" markerHeight="3.2" orient="auto"><path d="M0 0 L10 5 L0 10 z" class="t-head"/></marker></defs>
-    <rect width="220" height="220" class="t-ground"/>
-    <rect x="80" width="60" height="220" fill="#555b60"/>
-    <rect y="80" width="220" height="60" fill="#555b60"/>
-    ${dash(110, 0, 110, 80)}${dash(110, 140, 110, 220)}
-    ${two ? yel(0, 80) + yel(140, 220) : dash(0, 110, 80, 110) + dash(140, 110, 220, 110)}
-    ${ar(125, 185, '↑')}${ar(125, 40, '↑')}${ar(95, 40, '↑')}
-    ${two ? ar(35, 100, '←') + ar(185, 100, '←') + ar(35, 131, '→') + ar(185, 131, '→') : ar(35, 100, '←') + ar(35, 131, '←') + ar(185, 100, '←') + ar(185, 131, '←')}
-    <path d="${two ? 'M95 200 L95 140 Q95 95 50 95 L14 95' : 'M95 200 L95 150 Q95 125 70 125 L14 125'}" fill="none" class="t-path" stroke-width="4" stroke-linecap="round" marker-end="url(#ah-${kind})"/>
-    <rect x="88" y="196" width="14" height="22" rx="3" class="t-car"/>
-  </svg>
-  <p class="turn-cap">${two ? '<b>One-way → two-way:</b> start in the far-left lane, end in the lane just right of the yellow center line.' : '<b>One-way → one-way:</b> start in the far-left lane, end in the far-left lane. Also the only left turn allowed on red.'}</p>`;
-}
-
 /* ================= state ================= */
 const V = { mode: store.get('cram.vmode', 'list'), unit: 'all', q: '', known: new Set(store.get('cram.known', [])) };
-const D = { mode: store.get('cram.dmode', 'cards'), src: 'class', known: new Set(store.get('cram.dknown', [])), qz: store.get('cram.quizlet', []) };
 const M = { topic: store.get('cram.mtopic', 'constant') };
 
 /* ================= tabs ================= */
@@ -888,137 +731,6 @@ function renderVocabQuizSetup(body, pool) {
   };
 }
 
-/* ================= driver's ed ================= */
-function dSet() {
-  const cls = CLASS.map((c, i) => ({ ...c, id: 'c' + i, n: i + 1 }));
-  const ext = DRIVERS.map((c, i) => ({ ...c, id: 'd' + i }));
-  return D.src === 'extra' ? ext : D.src === 'all' ? [...cls, ...ext] : cls;
-}
-const dExtra = c => (c.why ? `<p class="why">${esc(c.why)}</p>` : '') + (c.d ? `<div class="turn">${turnSVG(c.d)}</div>` : '');
-function dItems() {
-  return dSet().map(c => ({ id: c.id, front: `${c.n ? `<span class="cardno">Class card ${c.n}</span>` : '<span class="cardno">Extra practice</span>'}<p class="fc-q">${esc(c.q)}</p>`, back: `<p class="ans">${esc(c.a)}</p>${dExtra(c)}` }));
-}
-function dQuestions() {
-  return shuffle(dSet()).map(c => mc(`<p class="q-label">${c.n ? 'Class review · card ' + c.n : 'Extra practice'}</p><p class="q-big">${esc(c.q)}</p>`, esc(c.a), c.w.map(esc), dExtra(c)));
-}
-function updateDMeta() { $('#d-meta').textContent = `${CLASS.length} class cards + ${DRIVERS.length} extra`; }
-$('#d-mode').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { D.mode = b.dataset.v; store.set('cram.dmode', D.mode); renderDrivers(); } });
-$('#d-src').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { D.src = b.dataset.v; renderDrivers(); } });
-
-function signSVG(kind) {
-  const S = {
-    stop: `<polygon points="14,1 32,1 45,14 45,32 32,45 14,45 1,32 1,14" fill="#C8102E" stroke="#fff" stroke-width="2"/><text x="23" y="27.5" text-anchor="middle" font-size="11" font-weight="700" fill="#fff" font-family="Arial, sans-serif">STOP</text>`,
-    yield: `<polygon points="2,4 44,4 23,42" fill="#fff" stroke="#C8102E" stroke-width="5" stroke-linejoin="round"/>`,
-    pennant: `<polygon points="2,8 44,23 2,38" fill="#F5C400" stroke="#222" stroke-width="1.5"/><text x="15" y="26" font-size="6.5" font-weight="700" fill="#222" font-family="Arial, sans-serif">NO</text>`,
-    rr: `<circle cx="23" cy="23" r="21" fill="#F5C400" stroke="#222" stroke-width="1.5"/><path d="M10 10 L36 36 M36 10 L10 36" stroke="#222" stroke-width="2.5"/><text x="9" y="27" font-size="9" font-weight="700" fill="#222" font-family="Arial, sans-serif">R</text><text x="31" y="27" font-size="9" font-weight="700" fill="#222" font-family="Arial, sans-serif">R</text>`,
-    school: `<polygon points="23,2 44,18 44,44 2,44 2,18" fill="#C7E81E" stroke="#222" stroke-width="1.5"/>`,
-    warn: `<polygon points="23,1 45,23 23,45 1,23" fill="#F5C400" stroke="#222" stroke-width="1.5"/>`,
-    work: `<polygon points="23,1 45,23 23,45 1,23" fill="#F28C00" stroke="#222" stroke-width="1.5"/>`,
-    cross: `<g transform="rotate(35 23 23)"><rect x="3" y="18" width="40" height="10" fill="#fff" stroke="#222" stroke-width="1.5"/></g><g transform="rotate(-35 23 23)"><rect x="3" y="18" width="40" height="10" fill="#fff" stroke="#222" stroke-width="1.5"/></g>`
-  };
-  return `<svg viewBox="0 0 46 46" aria-hidden="true">${S[kind]}</svg>`;
-}
-function cheatSheet() {
-  const nums = [
-    ['0.08%', 'BAC limit, 21 and older'], ['0.02%', 'BAC limit, under 21'], ['30 days', 'License revoked: under 21 drinking or possessing alcohol'],
-    ['1 DUI', 'Enough to require an ignition interlock device'], ['5 pts', '20 mph over the limit (plus possible suspension)'],
-    ['3 sec', 'Minimum following distance (more in bad weather)'], ['300 ft', 'Signal before turning'],
-    ['500 ft', 'Dim high beams for oncoming cars'], ['200 ft', 'Dim high beams when following'], ['1,000 ft', 'Lights on if you can\'t see this far'],
-    ['100 ft', 'No passing near intersections, bridges, RR crossings'], ['15–50 ft', 'Where to stop at a railroad crossing']
-  ];
-  const park = [['15 ft', 'Fire hydrant'], ['20 ft', 'Crosswalk at an intersection'], ['30 ft', 'Stop sign or traffic signal'], ['50 ft', 'Railroad crossing'], ['12 in', 'Max distance from curb']];
-  const speed = [['20 mph', 'School zone (when active)'], ['25 mph', 'Business and residential districts'], ['50 mph', 'Two-lane highway'], ['55 mph', 'Four-lane highway'], ['35 mph', 'Hydroplaning can start around here']];
-  const dl = rows => `<dl class="nums">${rows.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>`;
-  const signs = [['stop', 'Octagon', 'Stop'], ['yield', 'Triangle', 'Yield'], ['pennant', 'Pennant', 'No passing zone'], ['rr', 'Circle', 'Railroad ahead'], ['cross', 'Crossbuck', 'Railroad crossing'], ['school', 'Pentagon', 'School zone'], ['warn', 'Diamond', 'Warning'], ['work', 'Orange', 'Work zone']];
-  const colors = [['#C8102E', 'Red', 'Stop, yield, prohibited'], ['#F5C400', 'Yellow', 'General warning'], ['#F28C00', 'Orange', 'Construction'], ['#C7E81E', 'Yellow-green', 'School, pedestrians'], ['#1E7B3A', 'Green', 'Directions, guide'], ['#1F4FA3', 'Blue', 'Motorist services'], ['#7A4A24', 'Brown', 'Recreation, parks'], ['#FFFFFF', 'White', 'Regulatory (speed limit)']];
-  return `<div class="sheet">
-    <div class="card"><h3>By the numbers</h3>${dl(nums)}</div>
-    <div class="card"><h3>Left-turn diagrams</h3><div class="turns"><div class="turn">${turnSVG('one')}</div><div class="turn">${turnSVG('two')}</div></div></div>
-    <div class="card"><h3>No parking within…</h3>${dl(park)}<h3 style="margin-top:20px">Delaware speed limits</h3>${dl(speed)}</div>
-    <div class="card"><h3>Sign shapes</h3><div class="signs">${signs.map(([k, s, m]) => `<div class="sign">${signSVG(k)}<span><b>${s}</b>${m}</span></div>`).join('')}</div></div>
-    <div class="card"><h3>Sign colors</h3><div class="swatches">${colors.map(([c, n, m]) => `<div class="sw"><i style="background:${c}"></i><span><b>${n}</b><br><span class="muted">${m}</span></span></div>`).join('')}</div></div>
-    <div class="card"><h3>Emergencies</h3><ul class="list">
-      <li><b>Skid:</b> ease off the gas, steer where you want the front to go.</li>
-      <li><b>Hydroplaning:</b> ease off the gas, keep the wheel straight, no hard braking.</li>
-      <li><b>Brake failure:</b> pump the brakes, downshift, slowly apply the parking brake.</li>
-      <li><b>Blowout:</b> grip the wheel, ease off the gas, slow down gradually.</li>
-      <li><b>Stuck gas pedal:</b> shift to neutral, brake, pull off.</li>
-      <li><b>Wheels off the pavement:</b> ease off the gas, steer gently back when safe.</li>
-      <li><b>Siren behind you:</b> pull right and stop.</li></ul></div>
-    <div class="card"><h3>Right of way &amp; rules</h3><ul class="list">
-      <li><b>Uncontrolled intersection:</b> yield to the car on your right.</li>
-      <li><b>Four-way stop:</b> first to stop goes first; ties go to the right.</li>
-      <li><b>Left turn:</b> yield to oncoming traffic.</li>
-      <li><b>School bus red lights:</b> both directions stop, unless you're across a 4+ lane highway with a median.</li>
-      <li><b>Flashing red</b> = stop sign. <b>Flashing yellow</b> = caution.</li>
-      <li><b>Yellow lines</b> separate opposite directions. <b>White lines</b> separate the same direction.</li>
-      <li><b>Bikes:</b> change lanes or give at least 3 feet.</li>
-      <li><b>Phones:</b> no handheld use; permit holders can't use any phone.</li>
-      <li><b>GDL:</b> 50 practice hours (10 at night); supervisor 25+ with 5 years licensed; no unsupervised driving 10 p.m.–6 a.m.</li></ul></div>
-  </div>`;
-}
-function renderImport(body) {
-  body.innerHTML = `
-  <div class="card setup" style="max-width:820px">
-    <div><p class="eyebrow">Study your exact Quizlet set</p><h3>Paste your cards</h3></div>
-    <ol class="steps">
-      <li>Open your Quizlet set in a browser.</li>
-      <li>Click the <b>⋯</b> (three dots) button, then <b>Export</b>.</li>
-      <li>Leave the defaults (tab between term and definition, new line between cards) and click <b>Copy text</b>.</li>
-      <li>Paste it below and click <b>Save cards</b>.</li>
-    </ol>
-    <textarea id="qz-text" placeholder="Term&#9;Definition&#10;What is the BAC limit for drivers 21+?&#9;0.08%"></textarea>
-    <div class="row" style="justify-content:flex-start;align-items:center">
-      <button class="btn primary" id="qz-save">Save cards</button>
-      ${D.qz.length ? `<button class="btn bad" id="qz-clear">Delete my ${D.qz.length} cards</button>` : ''}
-      <span class="muted" id="qz-msg" style="font-size:.9rem">${D.qz.length ? `${D.qz.length} cards saved in this browser.` : 'Cards save in this browser only.'}</span>
-    </div>
-  </div>`;
-  $('#qz-save').onclick = () => {
-    const lines = $('#qz-text').value.split(/\r?\n/);
-    const cards = [];
-    for (const ln of lines) {
-      let t, d;
-      if (ln.includes('\t')) { const k = ln.indexOf('\t'); t = ln.slice(0, k); d = ln.slice(k + 1); }
-      else if (ln.includes(' - ')) { const k = ln.indexOf(' - '); t = ln.slice(0, k); d = ln.slice(k + 3); }
-      else continue;
-      t = t.trim(); d = d.trim(); if (t && d) cards.push({ t, d });
-    }
-    if (!cards.length) { $('#qz-msg').textContent = 'No cards found. Each line needs a term, a tab (or " - "), then the definition.'; return; }
-    D.qz = cards; store.set('cram.quizlet', cards); D.src = 'mine'; updateDMeta();
-    D.mode = 'cards'; store.set('cram.dmode', 'cards'); renderDrivers();
-  };
-  const clr = $('#qz-clear');
-  if (clr) {
-    let armed = false;
-    clr.onclick = () => {
-      if (!armed) { armed = true; clr.textContent = 'Click again to delete'; return; }
-      D.qz = []; store.set('cram.quizlet', []); D.src = 'dmv'; updateDMeta(); renderDrivers();
-    };
-  }
-}
-function renderDrivers() {
-  if (!['cards', 'test', 'sheet'].includes(D.mode)) D.mode = 'cards';
-  setPressed($('#d-mode'), D.mode);
-  const src = $('#d-src');
-  src.hidden = D.mode === 'sheet';
-  src.innerHTML = `<button class="chip" data-v="class">Class review (${CLASS.length})</button><button class="chip" data-v="extra">Extra practice (${DRIVERS.length})</button><button class="chip" data-v="all">Everything (${CLASS.length + DRIVERS.length})</button>`;
-  setPressed(src, D.src);
-  const body = $('#d-body'); keyHandlers.drivers = null;
-  if (D.mode === 'sheet') { body.innerHTML = cheatSheet(); return; }
-  body.innerHTML = '<div id="d-area"></div>';
-  const area = $('#d-area');
-  if (D.mode === 'cards') {
-    Flashcards(area, dItems(), 'drivers', {
-      swapLabel: 'Answer first',
-      isKnown: id => D.known.has(id),
-      setKnown: (id, y) => { if (y) D.known.add(id); else D.known.delete(id); store.set('cram.dknown', [...D.known]); }
-    });
-  } else {
-    Quiz(area, dQuestions, 'drivers');
-  }
-}
-
 /* ================= math ================= */
 const gcd = (a, b) => { a = Math.abs(a); b = Math.abs(b); while (b) [a, b] = [b, a % b]; return a || 1; };
 const F = (n, d = 1) => { if (d < 0) { n = -n; d = -d; } const g = gcd(n, d); return { n: n / g, d: d / g }; };
@@ -1161,7 +873,7 @@ const FTR = [
   ['Since when do you play tennis?', 'Depuis quand est-ce que tu joues au tennis ?', ['Depuis quand est-ce que tu as joué au tennis ?', 'Il y a quand est-ce que tu joues au tennis ?', 'Pendant quand est-ce que tu joues au tennis ?'], 'Depuis quand = since when, with the present tense.']
 ].map(([en, a, w, why]) => ({ en, a, w, why }));
 
-const F = { mode: store.get('cram.fmode', 'sheet'), topic: store.get('cram.ftopic', 'all'), known: new Set(store.get('cram.fknown', [])) };
+const FR = { mode: store.get('cram.fmode', 'sheet'), topic: store.get('cram.ftopic', 'all'), known: new Set(store.get('cram.fknown', [])) };
 const pick = a => a[Math.floor(Math.random() * a.length)];
 const gapS = s => esc(s).replace('___', '<span class="gap"></span>');
 
@@ -1207,8 +919,8 @@ function fQuestions(topic) {
 }
 
 function fItems() {
-  const vs = F.topic === 'time' ? [] : FV.map(v => ({ id: 'fv-' + v.inf, front: `<p class="fc-word">${v.inf}</p><span class="fc-pos">present tense</span>`, back: `<p class="fc-def">${esc(v.en)}</p>${fTable(v)}` }));
-  const ts = F.topic === 'verbs' ? [] : [
+  const vs = FR.topic === 'time' ? [] : FV.map(v => ({ id: 'fv-' + v.inf, front: `<p class="fc-word">${v.inf}</p><span class="fc-pos">present tense</span>`, back: `<p class="fc-def">${esc(v.en)}</p>${fTable(v)}` }));
+  const ts = FR.topic === 'verbs' ? [] : [
     { id: 'fr-depuis', front: '<p class="fc-word">depuis</p>', back: '<p class="ans">for / since (still going on)</p><p class="why">depuis + PRESENT tense</p><p class="ex">J\'habite ici depuis trois ans. (I\'ve lived here for 3 years.)</p>' },
     { id: 'fr-pendant', front: '<p class="fc-word">pendant</p>', back: '<p class="ans">for / during (a set length of time)</p><p class="why">works with any tense, usually passé composé</p><p class="ex">J\'ai dormi pendant huit heures. (I slept for 8 hours.)</p>' },
     { id: 'fr-ilya', front: '<p class="fc-word">il y a</p>', back: '<p class="ans">ago</p><p class="why">il y a + time, with the passé composé</p><p class="ex">Je suis arrivé il y a deux jours. (I arrived 2 days ago.)</p>' },
@@ -1256,22 +968,22 @@ function fSheet() {
         <li><b>Pendant combien de temps…?</b> How long (finished)? Answer: pendant une heure.</li>
         <li><b>Il y a combien de temps que…?</b> Same as depuis combien de temps.</li></ul></div>
     </div>`;
-  return `<div class="panel">${F.topic !== 'time' ? verbs : ''}${F.topic !== 'verbs' ? time : ''}</div>`;
+  return `<div class="panel">${FR.topic !== 'time' ? verbs : ''}${FR.topic !== 'verbs' ? time : ''}</div>`;
 }
 
-$('#f-mode').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { F.mode = b.dataset.v; store.set('cram.fmode', F.mode); renderFrench(); } });
-$('#f-topic').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { F.topic = b.dataset.v; store.set('cram.ftopic', F.topic); renderFrench(); } });
+$('#f-mode').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { FR.mode = b.dataset.v; store.set('cram.fmode', FR.mode); renderFrench(); } });
+$('#f-topic').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { FR.topic = b.dataset.v; store.set('cram.ftopic', FR.topic); renderFrench(); } });
 function renderFrench() {
-  setPressed($('#f-mode'), F.mode); setPressed($('#f-topic'), F.topic);
+  setPressed($('#f-mode'), FR.mode); setPressed($('#f-topic'), FR.topic);
   const body = $('#f-body'); keyHandlers.french = null; body.onclick = null;
-  if (F.mode === 'cards') {
+  if (FR.mode === 'cards') {
     Flashcards(body, fItems(), 'french', {
       swapLabel: 'Answer first',
-      isKnown: id => F.known.has(id),
-      setKnown: (id, y) => { if (y) F.known.add(id); else F.known.delete(id); store.set('cram.fknown', [...F.known]); }
+      isKnown: id => FR.known.has(id),
+      setKnown: (id, y) => { if (y) FR.known.add(id); else FR.known.delete(id); store.set('cram.fknown', [...FR.known]); }
     });
-  } else if (F.mode === 'quiz') {
-    Quiz(body, () => fQuestions(F.topic), 'french');
+  } else if (FR.mode === 'quiz') {
+    Quiz(body, () => fQuestions(FR.topic), 'french');
   } else {
     body.innerHTML = fSheet();
   }
