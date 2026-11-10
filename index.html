@@ -989,8 +989,7 @@ function renderFrench() {
 }
 
 /* ================= boot ================= */
-updateDMeta();
-renderVocab(); renderDrivers(); renderMath(); renderFrench();
+renderVocab(); renderMath(); renderFrench();
 setTab(location.hash ? location.hash.slice(1) : store.get('cram.tab', 'vocab'));
 </script>
 
