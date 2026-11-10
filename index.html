@@ -1111,9 +1111,175 @@ function renderMath() {
   Quiz($('#m-body'), () => Array.from({ length: 10 }, () => GEN[M.topic]()), 'math');
 }
 
+/* ================= french ================= */
+const FV = [
+  ['venir', 'v', '', 'to come', 'come'],
+  ['revenir', 'v', 're', 'to come back, to return', 'come back'],
+  ['tenir', 't', '', 'to hold, to take, to grip', 'hold'],
+  ['retenir', 't', 're', 'to hold back, to catch', 'hold back'],
+  ['maintenir', 't', 'main', 'to keep, to hold, to maintain', 'maintain']
+].map(([inf, b, p, en, eng]) => ({ inf, b, p, en, eng, forms: ['iens', 'iens', 'ient', 'enons', 'enez', 'iennent'].map(e => p + b + e) }));
+const FPRON = ['je', 'tu', 'il/elle/on', 'nous', 'vous', 'ils/elles'];
+const BOOT = [0, 1, 2, 5];
+const FAKE = ['ens', 'ens', 'ent', 'ienons', 'ienez', 'ienent'];
+
+const FT = [
+  ["J'étudie le français ___ trois ans.", 'depuis', "I've been studying French for three years.", 'Still studying now, so depuis + present tense.'],
+  ["Cette nuit, elle a dormi ___ huit heures.", 'pendant', 'Last night she slept for eight hours.', 'A finished length of time, so pendant.'],
+  ["Nous sommes arrivés ___ deux jours.", 'il y a', 'We arrived two days ago.', '"Ago" + passé composé, so il y a.'],
+  ["Il habite à Paris ___ 2019.", 'depuis', 'He has lived in Paris since 2019.', 'Since a starting point and still true, so depuis.'],
+  ["J'ai travaillé ___ tout l'été.", 'pendant', 'I worked during the whole summer.', '"During", so pendant.'],
+  ["Tu as vu ce film ___ une semaine ?", 'il y a', 'You saw this movie a week ago?', '"Ago" + passé composé, so il y a.'],
+  ["Ils attendent le bus ___ vingt minutes.", 'depuis', "They've been waiting for the bus for twenty minutes.", 'Still waiting, so depuis + present.'],
+  ["___ les vacances, nous allons à la plage.", 'pendant', 'During vacation, we go to the beach.', '"During" + a noun, so pendant.'],
+  ["Mon frère est parti ___ une heure.", 'il y a', 'My brother left an hour ago.', 'One moment in the past ("ago"), so il y a.'],
+  ["Elle joue du piano ___ l'âge de six ans.", 'depuis', 'She has played piano since age six.', 'Started in the past, still playing, so depuis + present.'],
+  ["Hier soir, on a regardé la télé ___ deux heures, de 8h à 10h.", 'pendant', 'Last night we watched TV for two hours, from 8 to 10.', 'A finished stretch of time, so pendant.'],
+  ["___ combien de temps est-ce que tu habites ici ?", 'Depuis', 'How long have you been living here?', 'Present tense and still living here, so depuis.'],
+  ["___ quand est-ce que vous êtes malade ?", 'Depuis', 'Since when have you been sick?', 'Depuis quand = since when.'],
+  ["J'ai fini mes devoirs ___ dix minutes.", 'il y a', 'I finished my homework ten minutes ago.', '"Ago" + passé composé, so il y a.'],
+  ["Il pleut ___ ce matin.", 'depuis', "It's been raining since this morning.", 'Still raining, so depuis + present.'],
+  ["L'été dernier, ils ont voyagé en France ___ trois semaines.", 'pendant', 'Last summer they traveled in France for three weeks.', 'A finished length of time, so pendant.'],
+  ["Le cours a commencé ___ un quart d'heure.", 'il y a', 'Class started fifteen minutes ago.', '"Ago", so il y a.'],
+  ["Je connais Marie ___ longtemps.", 'depuis', "I've known Marie for a long time.", 'Still know her, so depuis + present.'],
+  ["___ deux ans que je fais du karaté.", 'Il y a', "I've been doing karate for two years.", 'Il y a + time + que + present means the same as depuis.'],
+  ["Elle a vécu à Montréal ___ cinq ans, de 2015 à 2020.", 'pendant', 'She lived in Montreal for five years, from 2015 to 2020.', "It's over, so pendant."],
+  ["Ce soir, je vais étudier ___ deux heures.", 'pendant', "Tonight I'm going to study for two hours.", 'A planned length of time, so pendant.'],
+  ["Nous ne parlons pas ___ le film.", 'pendant', "We don't talk during the movie.", '"During", so pendant.'],
+  ["Je t'ai vu au café ___ trois jours.", 'il y a', 'I saw you at the café three days ago.', '"Ago" + passé composé, so il y a.'],
+  ["Mes parents sont mariés ___ vingt ans.", 'depuis', 'My parents have been married for twenty years.', 'Still married, so depuis + present.']
+].map(([s, a, en, why]) => ({ s, a, en, why }));
+
+const FTR = [
+  ["I've been living here for three years.", "J'habite ici depuis trois ans.", ["J'ai habité ici depuis trois ans.", "J'habite ici il y a trois ans.", "J'habite ici pendant trois ans."], 'Still living here: depuis + PRESENT tense, even though English says "have been".'],
+  ['I arrived two hours ago.', 'Je suis arrivé il y a deux heures.', ['Je suis arrivé depuis deux heures.', "J'arrive il y a deux heures.", 'Je suis arrivé pendant deux heures.'], '"Ago" = il y a + passé composé.'],
+  ['We talked for an hour (then stopped).', 'Nous avons parlé pendant une heure.', ['Nous avons parlé depuis une heure.', 'Nous avons parlé il y a une heure.', 'Nous parlons il y a une heure.'], 'Finished length of time = pendant.'],
+  ['She has been sick since Monday.', 'Elle est malade depuis lundi.', ['Elle a été malade depuis lundi.', 'Elle est malade il y a lundi.', 'Elle est malade pendant lundi.'], 'Still sick: depuis + present.'],
+  ['How long have you been studying French?', 'Depuis combien de temps est-ce que tu étudies le français ?', ['Depuis combien de temps est-ce que tu as étudié le français ?', 'Il y a combien de temps est-ce que tu as étudié le français ?', 'Pendant quand est-ce que tu étudies le français ?'], 'Still studying: depuis combien de temps + present.'],
+  ['They left ten minutes ago.', 'Ils sont partis il y a dix minutes.', ['Ils sont partis depuis dix minutes.', 'Ils partent il y a dix minutes.', 'Ils sont partis pendant dix minutes.'], '"Ago" = il y a + passé composé.'],
+  ["I've been waiting for twenty minutes.", "J'attends depuis vingt minutes.", ["J'ai attendu depuis vingt minutes.", "J'attends il y a vingt minutes.", "J'attends pendant vingt minutes."], 'Still waiting: depuis + present. Same meaning: Il y a vingt minutes que j\'attends.'],
+  ['Since when do you play tennis?', 'Depuis quand est-ce que tu joues au tennis ?', ['Depuis quand est-ce que tu as joué au tennis ?', 'Il y a quand est-ce que tu joues au tennis ?', 'Pendant quand est-ce que tu joues au tennis ?'], 'Depuis quand = since when, with the present tense.']
+].map(([en, a, w, why]) => ({ en, a, w, why }));
+
+const F = { mode: store.get('cram.fmode', 'sheet'), topic: store.get('cram.ftopic', 'all'), known: new Set(store.get('cram.fknown', [])) };
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const gapS = s => esc(s).replace('___', '<span class="gap"></span>');
+
+function fTable(v) {
+  const cell = i => `<td${BOOT.includes(i) ? ' class="boot"' : ''}><span class="p">${FPRON[i]}</span> <b>${v.p}${v.b}<u>${v.forms[i].slice(v.p.length + 1)}</u></b></td>`;
+  return `<table class="conj"><tbody>${[0, 1, 2].map(i => `<tr>${cell(i)}${cell(i + 3)}</tr>`).join('')}</tbody></table>`;
+}
+const fLine = v => `<b>${v.inf}</b> (${v.en}): ${v.forms.map((f, i) => FPRON[i].split('/')[0] + ' ' + f).join(', ')}.`;
+
+function fConj(v, i) {
+  const pr = i === 2 ? pick(['il', 'elle', 'on']) : i === 5 ? pick(['ils', 'elles']) : FPRON[i];
+  const wr = [v.p + v.b + FAKE[i], ...shuffle(v.forms)];
+  return mc(`<p class="q-label">Present tense of ${v.inf} (${esc(v.en)})</p><p class="q-math">${pr} <span class="gap"></span></p>`, v.forms[i], wr,
+    fLine(v) + (BOOT.includes(i) ? '<br>This form is inside the “boot”, so the stem is <b>-ien-</b>.' : '<br>Nous and vous are outside the “boot”, so the stem keeps the plain <b>-en-</b>.'));
+}
+function fTrans(v, i) {
+  const subj = ['I', 'You', pick(['He', 'She']), 'We', 'You all', 'They'][i];
+  const words = v.eng.split(' '); if (i === 2) words[0] += 's';
+  const pr = i === 2 ? (subj === 'He' ? 'il' : 'elle') : i === 5 ? 'ils' : FPRON[i];
+  const others = shuffle(FV.filter(x => x !== v));
+  const wr = [pr + ' ' + v.forms[(i + 3) % 6], pr + ' ' + others[0].forms[i], pr + ' ' + v.p + v.b + FAKE[i], pr + ' ' + others[1].forms[i]];
+  return mc(`<p class="q-label">How do you say it in French?</p><p class="q-big">“${subj} ${words.join(' ')}.”</p>`, pr + ' ' + v.forms[i], wr, fLine(v));
+}
+function fMean(v) {
+  const others = shuffle(FV.filter(x => x !== v));
+  if (Math.random() < .5) return mc(`<p class="q-label">What does this verb mean?</p><p class="q-word">${v.inf}</p>`, esc(v.en), others.map(x => esc(x.en)), fLine(v));
+  return mc(`<p class="q-label">Which verb means…</p><p class="q-big">${esc(v.en)}</p>`, v.inf, others.map(x => x.inf), fLine(v));
+}
+function fFill(t) {
+  const cap = t.s.startsWith('___');
+  const opts = ['depuis', 'pendant', 'il y a'].map(o => cap ? o[0].toUpperCase() + o.slice(1) : o);
+  return mc(`<p class="q-label">Depuis, pendant, or il y a?</p><p class="q-big">${gapS(t.s)}</p>`, t.a, opts, `<b>${t.a}</b>: ${esc(t.why)}<br><i>${esc(t.en)}</i>`);
+}
+const fTr = t => mc(`<p class="q-label">Pick the correct French</p><p class="q-big">“${esc(t.en)}”</p>`, esc(t.a), t.w.map(esc), esc(t.why));
+
+function fQuestions(topic) {
+  const pairs = shuffle(FV.flatMap(v => [0, 1, 2, 3, 4, 5].map(i => [v, i])));
+  const verbs = n => [...pairs.slice(0, n - 3).map(([v, i], k) => k % 3 === 2 ? fTrans(v, i) : fConj(v, i)), ...shuffle(FV).slice(0, 3).map(fMean)];
+  const time = (a, b) => [...shuffle(FT).slice(0, a).map(fFill), ...shuffle(FTR).slice(0, b).map(fTr)];
+  if (topic === 'verbs') return shuffle(verbs(18));
+  if (topic === 'time') return shuffle(time(12, 6));
+  return shuffle([...verbs(10), ...time(7, 3)]);
+}
+
+function fItems() {
+  const vs = F.topic === 'time' ? [] : FV.map(v => ({ id: 'fv-' + v.inf, front: `<p class="fc-word">${v.inf}</p><span class="fc-pos">present tense</span>`, back: `<p class="fc-def">${esc(v.en)}</p>${fTable(v)}` }));
+  const ts = F.topic === 'verbs' ? [] : [
+    { id: 'fr-depuis', front: '<p class="fc-word">depuis</p>', back: '<p class="ans">for / since (still going on)</p><p class="why">depuis + PRESENT tense</p><p class="ex">J\'habite ici depuis trois ans. (I\'ve lived here for 3 years.)</p>' },
+    { id: 'fr-pendant', front: '<p class="fc-word">pendant</p>', back: '<p class="ans">for / during (a set length of time)</p><p class="why">works with any tense, usually passé composé</p><p class="ex">J\'ai dormi pendant huit heures. (I slept for 8 hours.)</p>' },
+    { id: 'fr-ilya', front: '<p class="fc-word">il y a</p>', back: '<p class="ans">ago</p><p class="why">il y a + time, with the passé composé</p><p class="ex">Je suis arrivé il y a deux jours. (I arrived 2 days ago.)</p>' },
+    { id: 'fr-ilyaque', front: '<p class="fc-word">il y a … que</p>', back: '<p class="ans">same as depuis</p><p class="why">il y a + time + que + PRESENT</p><p class="ex">Il y a deux ans que je fais du karaté. = Je fais du karaté depuis deux ans.</p>' },
+    ...FT.map((t, k) => ({ id: 'ft' + k, front: `<span class="cardno">Depuis, pendant, or il y a?</span><p class="fc-q">${gapS(t.s)}</p>`, back: `<p class="ans">${t.a}</p><p class="why">${esc(t.why)}</p><p class="ex">${esc(t.en)}</p>` }))
+  ];
+  return [...vs, ...ts];
+}
+
+function fSheet() {
+  const verbs = `
+    <h2 class="sec-head">Verbs: venir, tenir &amp; family</h2>
+    <div class="card"><p class="eyebrow">The pattern</p>
+      <p style="margin:6px 0 10px">All five verbs follow one pattern. Revenir is re + venir. Retenir and maintenir are re + tenir and main + tenir. Learn venir and tenir and you know all five.</p>
+      <ul class="list">
+        <li><b>Endings:</b> -s, -s, -t, -ons, -ez, -ent.</li>
+        <li><b>The boot:</b> je, tu, il/elle/on, and ils/elles get the stem <b>-ien-</b> (viens, tient). Nous and vous keep the plain stem (venons, tenez).</li>
+        <li><b>Ils/elles doubles the n:</b> viennent, tiennent, maintiennent.</li>
+      </ul>
+      <p class="legend"><i></i> Shaded boxes are inside the boot.</p>
+    </div>
+    <div class="sheet">${FV.map(v => `<div class="card"><h3>${v.inf} <span class="pos">${esc(v.en)}</span></h3>${fTable(v)}</div>`).join('')}</div>`;
+  const time = `
+    <h2 class="sec-head">Textbook p. 63: depuis, pendant, il y a</h2>
+    <div class="time3">
+      <div class="card"><p class="tword">depuis</p><p class="tmean">for / since. Still happening now.</p><p class="formula">PRESENT + depuis + time</p>
+        <p class="fx">J'habite ici depuis trois ans.<i>I've lived here for three years (and still do).</i></p>
+        <p class="fx">Il pleut depuis lundi.<i>It's been raining since Monday.</i></p></div>
+      <div class="card"><p class="tword">pendant</p><p class="tmean">for / during. A set length of time.</p><p class="formula">any tense + pendant + time</p>
+        <p class="fx">J'ai dormi pendant huit heures.<i>I slept for eight hours.</i></p>
+        <p class="fx">Pendant le film, on mange du pop-corn.<i>During the movie, we eat popcorn.</i></p></div>
+      <div class="card"><p class="tword">il y a</p><p class="tmean">ago. One moment in the past.</p><p class="formula">PASSÉ COMPOSÉ + il y a + time</p>
+        <p class="fx">Je suis arrivé il y a deux jours.<i>I arrived two days ago.</i></p>
+        <p class="fx">Il y a trois ans que j'habite ici.<i>Il y a … que + present = depuis.</i></p></div>
+    </div>
+    <div class="sheet">
+      <div class="card"><h3>Which one? Ask yourself</h3><ol class="steps">
+        <li>Does the English say <b>“ago”</b>? Use <b>il y a</b>.</li>
+        <li>Is it <b>still going on</b> (“have been…”)? Use <b>depuis</b> with the <b>present</b> tense.</li>
+        <li>Is it a <b>finished or planned</b> length of time, or “during”? Use <b>pendant</b>.</li></ol>
+        <p class="muted" style="margin:10px 0 0;font-size:.9rem">Trap: English says “I <i>have been</i> waiting”, but French uses the present: <b>J'attends depuis…</b>, never “J'ai attendu depuis”.</p></div>
+      <div class="card"><h3>Asking the question</h3><ul class="list">
+        <li><b>Depuis quand…?</b> Since when? Answer with a starting point: depuis lundi, depuis 2020.</li>
+        <li><b>Depuis combien de temps…?</b> How long (so far)? Answer with a length: depuis deux ans.</li>
+        <li><b>Pendant combien de temps…?</b> How long (finished)? Answer: pendant une heure.</li>
+        <li><b>Il y a combien de temps que…?</b> Same as depuis combien de temps.</li></ul></div>
+    </div>`;
+  return `<div class="panel">${F.topic !== 'time' ? verbs : ''}${F.topic !== 'verbs' ? time : ''}</div>`;
+}
+
+$('#f-mode').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { F.mode = b.dataset.v; store.set('cram.fmode', F.mode); renderFrench(); } });
+$('#f-topic').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { F.topic = b.dataset.v; store.set('cram.ftopic', F.topic); renderFrench(); } });
+function renderFrench() {
+  setPressed($('#f-mode'), F.mode); setPressed($('#f-topic'), F.topic);
+  const body = $('#f-body'); keyHandlers.french = null; body.onclick = null;
+  if (F.mode === 'cards') {
+    Flashcards(body, fItems(), 'french', {
+      swapLabel: 'Answer first',
+      isKnown: id => F.known.has(id),
+      setKnown: (id, y) => { if (y) F.known.add(id); else F.known.delete(id); store.set('cram.fknown', [...F.known]); }
+    });
+  } else if (F.mode === 'quiz') {
+    Quiz(body, () => fQuestions(F.topic), 'french');
+  } else {
+    body.innerHTML = fSheet();
+  }
+}
+
 /* ================= boot ================= */
 updateDMeta();
-renderVocab(); renderDrivers(); renderMath();
+renderVocab(); renderDrivers(); renderMath(); renderFrench();
 setTab(location.hash ? location.hash.slice(1) : store.get('cram.tab', 'vocab'));
 </script>
 
