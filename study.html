@@ -358,9 +358,7 @@ textarea:focus{outline:none;border-color:var(--accent)}
         <div class="seg" id="f-mode">
           <button data-v="sheet">Study sheet</button><button data-v="cards">Flashcards</button><button data-v="quiz">Quiz</button>
         </div>
-        <div class="chips" id="f-topic">
-          <button class="chip" data-v="all">Everything</button><button class="chip" data-v="verbs">Verbs: venir, tenir…</button><button class="chip" data-v="time">Depuis · pendant · il y a</button>
-        </div>
+        <div class="chips" id="f-topic"></div>
       </div>
       <div class="note-banner"><p><b>Not on the test:</b> passé récent (venir de + infinitive) and double object pronouns. Skip those parts of the review sheets.</p></div>
       <div id="f-body"></div>
@@ -814,17 +812,68 @@ function renderMath() {
 }
 
 /* ================= french ================= */
-const FV = [
-  ['venir', 'v', '', 'to come', 'come'],
-  ['revenir', 'v', 're', 'to come back, to return', 'come back'],
-  ['tenir', 't', '', 'to hold, to take, to grip', 'hold'],
-  ['retenir', 't', 're', 'to hold back, to catch', 'hold back'],
-  ['maintenir', 't', 'main', 'to keep, to hold, to maintain', 'maintain']
-].map(([inf, b, p, en, eng]) => ({ inf, b, p, en, eng, forms: ['iens', 'iens', 'ient', 'enons', 'enez', 'iennent'].map(e => p + b + e) }));
-const FPRON = ['je', 'tu', 'il/elle/on', 'nous', 'vous', 'ils/elles'];
+/* Unité 1 (Leçons 1A/1B) review. Passé récent (venir de) and double object pronouns are NOT on the test. */
+const PRON = ['je', 'tu', 'il/elle/on', 'nous', 'vous', 'ils/elles'];
+const isV = s => /^[aeéèêiîoôu]/i.test(s);
+const pj = (p, f) => (p === 'je' && isV(f) ? "j'" : p + ' ') + f;
+const pick = a => a[Math.floor(Math.random() * a.length)];
+const gapS = s => esc(s).replace('___', '<span class="gap"></span>');
+const cap1 = s => s[0].toUpperCase() + s.slice(1);
+function conjTable(forms, hi = [], disp = forms) {
+  const cell = i => { const el = i === 0 && isV(forms[i]); return `<td${hi.includes(i) ? ' class="boot"' : ''}><span class="p">${el ? "j'" : PRON[i]}</span>${el ? '' : ' '}<b>${disp[i]}</b></td>`; };
+  return `<table class="conj"><tbody>${[0, 1, 2].map(i => `<tr>${cell(i)}${cell(i + 3)}</tr>`).join('')}</tbody></table>`;
+}
+const AUX = { 'être': ['suis', 'es', 'est', 'sommes', 'êtes', 'sont'], avoir: ['ai', 'as', 'a', 'avons', 'avez', 'ont'] };
+
+/* ---------- venir / tenir family ---------- */
+const ENDS = ['iens', 'iens', 'ient', 'enons', 'enez', 'iennent'];
 const BOOT = [0, 1, 2, 5];
 const FAKE = ['ens', 'ens', 'ent', 'ienons', 'ienez', 'ienent'];
+const FV = [
+  ['venir', 'v', '', 'to come', 'come', 'être'],
+  ['revenir', 'v', 're', 'to come back, to return', 'come back', 'être'],
+  ['devenir', 'v', 'de', 'to become', 'become', 'être'],
+  ['tenir', 't', '', 'to hold, to take, to grip', 'hold', 'avoir'],
+  ['retenir', 't', 're', 'to hold back, to catch, to retain', 'hold back', 'avoir'],
+  ['maintenir', 't', 'main', 'to keep, to hold, to maintain', 'maintain', 'avoir']
+].map(([inf, b, p, en, eng, aux]) => ({ inf, b, p, en, eng, aux, pp: p + b + 'enu', forms: ENDS.map(e => p + b + e) }));
+function fTable(v) {
+  return conjTable(v.forms, BOOT, v.forms.map(f => `${v.p}${v.b}<u>${f.slice(v.p.length + 1)}</u>`)) +
+    `<p class="pcline">Passé composé: <b>${v.aux === 'être' ? 'je suis ' + v.pp + '(e)' : "j'ai " + v.pp}</b> (uses ${v.aux})</p>`;
+}
+const fLine = v => `<b>${v.inf}</b> (${v.en}): ${v.forms.map((f, i) => PRON[i].split('/')[0] + ' ' + f).join(', ')}.`;
+function fConj(v, i) {
+  const pr = i === 2 ? pick(['il', 'elle', 'on']) : i === 5 ? pick(['ils', 'elles']) : PRON[i];
+  return mc(`<p class="q-label">Present tense of ${v.inf} (${esc(v.en)})</p><p class="q-math">${pr} <span class="gap"></span></p>`, v.forms[i], [v.p + v.b + FAKE[i], ...shuffle(v.forms)],
+    fLine(v) + (BOOT.includes(i) ? '<br>This form is inside the “boot”, so the stem is <b>-ien-</b>.' : '<br>Nous and vous are outside the “boot”, so the stem keeps the plain <b>-en-</b>.'));
+}
+function fTrans(v, i) {
+  const subj = ['I', 'You', pick(['He', 'She']), 'We', 'You all', 'They'][i];
+  const words = v.eng.split(' '); if (i === 2) words[0] += 's';
+  const pr = i === 2 ? (subj === 'He' ? 'il' : 'elle') : i === 5 ? 'ils' : PRON[i];
+  const others = shuffle(FV.filter(x => x !== v));
+  const wr = [pr + ' ' + v.forms[(i + 3) % 6], pr + ' ' + others[0].forms[i], pr + ' ' + v.p + v.b + FAKE[i], pr + ' ' + others[1].forms[i]];
+  return mc(`<p class="q-label">How do you say it in French?</p><p class="q-big">“${subj} ${words.join(' ')}.”</p>`, pr + ' ' + v.forms[i], wr, fLine(v));
+}
+function fMean(v) {
+  const others = shuffle(FV.filter(x => x !== v));
+  if (Math.random() < .5) return mc(`<p class="q-label">What does this verb mean?</p><p class="q-word">${v.inf}</p>`, esc(v.en), others.map(x => esc(x.en)), fLine(v));
+  return mc(`<p class="q-label">Which verb means…</p><p class="q-big">${esc(v.en)}</p>`, v.inf, others.map(x => x.inf), fLine(v));
+}
+const VCTX = [
+  ["Mon frère ___ professeur l'année dernière.", 'est devenu', ['a devenu', 'est devenue', 'devient'], "devenir uses être (DR MRS VANDERTRAMP). “L'année dernière” = passé composé. Mon frère is masculine: devenu."],
+  ['Mes amis ___ du Canada hier soir. Ils ont adoré !', 'sont revenus', ['ont revenu', 'sont revenu', 'reviennent'], 'revenir uses être, and ils adds -s: sont revenus.'],
+  ['Sur la photo, mon grand-père ___ un chapeau dans sa main.', 'tient', ['tiens', 'tiennent', 'est tenu'], 'Describing a photo = present. Il form of tenir: tient.'],
+  ["Hier, la police ___ les voyageurs à l'aéroport pendant deux heures.", 'a retenu', ['est retenu', 'ont retenu', 'retient'], 'retenir uses avoir (it is not a DR MRS verb). La police is singular: a retenu.'],
+  ['Est-ce que tu ___ à ma fête samedi ?', 'viens', ['vient', 'venez', 'viennent'], 'venir, tu form: viens.'],
+  ['Nous ___ notre jardin très propre.', 'maintenons', ['maintiennons', 'maintenez', 'maintiennent'], 'Nous is outside the boot: maintenons (no -ien-).'],
+  ['Elles ___ en retard ce matin.', 'sont venues', ['ont venu', 'sont venus', 'sont venu'], 'venir uses être, and elles adds -es: sont venues.'],
+  ['Mes parents ___ toujours leurs promesses.', 'tiennent', ['tienent', 'tenent', 'tenons'], 'Ils form is inside the boot and doubles the n: tiennent.'],
+  ['Vous ___ à la maison à quelle heure ce soir ?', 'revenez', ['reviennez', 'revenons', 'reviens'], 'Vous is outside the boot: revenez.']
+];
+const ctxQ = t => mc(`<p class="q-label">Pick the right verb form</p><p class="q-big">${gapS(t[0])}</p>`, t[1], t[2], esc(t[3]));
 
+/* ---------- depuis / pendant / il y a ---------- */
 const FT = [
   ["J'étudie le français ___ trois ans.", 'depuis', "I've been studying French for three years.", 'Still studying now, so depuis + present tense.'],
   ["Cette nuit, elle a dormi ___ huit heures.", 'pendant', 'Last night she slept for eight hours.', 'A finished length of time, so pendant.'],
@@ -849,9 +898,9 @@ const FT = [
   ["Ce soir, je vais étudier ___ deux heures.", 'pendant', "Tonight I'm going to study for two hours.", 'A planned length of time, so pendant.'],
   ["Nous ne parlons pas ___ le film.", 'pendant', "We don't talk during the movie.", '"During", so pendant.'],
   ["Je t'ai vu au café ___ trois jours.", 'il y a', 'I saw you at the café three days ago.', '"Ago" + passé composé, so il y a.'],
-  ["Mes parents sont mariés ___ vingt ans.", 'depuis', 'My parents have been married for twenty years.', 'Still married, so depuis + present.']
+  ["Mes parents sont mariés ___ vingt ans.", 'depuis', 'My parents have been married for twenty years.', 'Still married, so depuis + present.'],
+  ["On fait cuire le gâteau au four ___ quarante minutes.", 'pendant', 'You bake the cake in the oven for forty minutes.', 'A set length of time (a recipe), so pendant.']
 ].map(([s, a, en, why]) => ({ s, a, en, why }));
-
 const FTR = [
   ["I've been living here for three years.", "J'habite ici depuis trois ans.", ["J'ai habité ici depuis trois ans.", "J'habite ici il y a trois ans.", "J'habite ici pendant trois ans."], 'Still living here: depuis + PRESENT tense, even though English says "have been".'],
   ['I arrived two hours ago.', 'Je suis arrivé il y a deux heures.', ['Je suis arrivé depuis deux heures.', "J'arrive il y a deux heures.", 'Je suis arrivé pendant deux heures.'], '"Ago" = il y a + passé composé.'],
@@ -859,123 +908,442 @@ const FTR = [
   ['She has been sick since Monday.', 'Elle est malade depuis lundi.', ['Elle a été malade depuis lundi.', 'Elle est malade il y a lundi.', 'Elle est malade pendant lundi.'], 'Still sick: depuis + present.'],
   ['How long have you been studying French?', 'Depuis combien de temps est-ce que tu étudies le français ?', ['Depuis combien de temps est-ce que tu as étudié le français ?', 'Il y a combien de temps est-ce que tu as étudié le français ?', 'Pendant quand est-ce que tu étudies le français ?'], 'Still studying: depuis combien de temps + present.'],
   ['They left ten minutes ago.', 'Ils sont partis il y a dix minutes.', ['Ils sont partis depuis dix minutes.', 'Ils partent il y a dix minutes.', 'Ils sont partis pendant dix minutes.'], '"Ago" = il y a + passé composé.'],
-  ["I've been waiting for twenty minutes.", "J'attends depuis vingt minutes.", ["J'ai attendu depuis vingt minutes.", "J'attends il y a vingt minutes.", "J'attends pendant vingt minutes."], 'Still waiting: depuis + present. Same meaning: Il y a vingt minutes que j\'attends.'],
-  ['Since when do you play tennis?', 'Depuis quand est-ce que tu joues au tennis ?', ['Depuis quand est-ce que tu as joué au tennis ?', 'Il y a quand est-ce que tu joues au tennis ?', 'Pendant quand est-ce que tu joues au tennis ?'], 'Depuis quand = since when, with the present tense.']
+  ["I've been waiting for twenty minutes.", "J'attends depuis vingt minutes.", ["J'ai attendu depuis vingt minutes.", "J'attends il y a vingt minutes.", "J'attends pendant vingt minutes."], "Still waiting: depuis + present. Same meaning: Il y a vingt minutes que j'attends."],
+  ['Did you take out the trash? Yes, ten minutes ago.', "Oui, j'ai sorti la poubelle il y a dix minutes.", ["Oui, j'ai sorti la poubelle depuis dix minutes.", 'Oui, je suis sorti la poubelle il y a dix minutes.', "Oui, j'ai sorti la poubelle pendant dix minutes."], '"Ago" = il y a. Sortir + an object (la poubelle) uses avoir.'],
+  ['Is Paul waiting for the guests? Yes, for an hour (still).', 'Oui, il attend les invités depuis une heure.', ['Oui, il a attendu les invités depuis une heure.', 'Oui, il attend les invités il y a une heure.', 'Oui, il attend les invités pendant une heure.'], 'Still waiting: depuis + present.']
 ].map(([en, a, w, why]) => ({ en, a, w, why }));
-
-const FR = { mode: store.get('cram.fmode', 'sheet'), topic: store.get('cram.ftopic', 'all'), known: new Set(store.get('cram.fknown', [])) };
-const pick = a => a[Math.floor(Math.random() * a.length)];
-const gapS = s => esc(s).replace('___', '<span class="gap"></span>');
-
-function fTable(v) {
-  const cell = i => `<td${BOOT.includes(i) ? ' class="boot"' : ''}><span class="p">${FPRON[i]}</span> <b>${v.p}${v.b}<u>${v.forms[i].slice(v.p.length + 1)}</u></b></td>`;
-  return `<table class="conj"><tbody>${[0, 1, 2].map(i => `<tr>${cell(i)}${cell(i + 3)}</tr>`).join('')}</tbody></table>`;
-}
-const fLine = v => `<b>${v.inf}</b> (${v.en}): ${v.forms.map((f, i) => FPRON[i].split('/')[0] + ' ' + f).join(', ')}.`;
-
-function fConj(v, i) {
-  const pr = i === 2 ? pick(['il', 'elle', 'on']) : i === 5 ? pick(['ils', 'elles']) : FPRON[i];
-  const wr = [v.p + v.b + FAKE[i], ...shuffle(v.forms)];
-  return mc(`<p class="q-label">Present tense of ${v.inf} (${esc(v.en)})</p><p class="q-math">${pr} <span class="gap"></span></p>`, v.forms[i], wr,
-    fLine(v) + (BOOT.includes(i) ? '<br>This form is inside the “boot”, so the stem is <b>-ien-</b>.' : '<br>Nous and vous are outside the “boot”, so the stem keeps the plain <b>-en-</b>.'));
-}
-function fTrans(v, i) {
-  const subj = ['I', 'You', pick(['He', 'She']), 'We', 'You all', 'They'][i];
-  const words = v.eng.split(' '); if (i === 2) words[0] += 's';
-  const pr = i === 2 ? (subj === 'He' ? 'il' : 'elle') : i === 5 ? 'ils' : FPRON[i];
-  const others = shuffle(FV.filter(x => x !== v));
-  const wr = [pr + ' ' + v.forms[(i + 3) % 6], pr + ' ' + others[0].forms[i], pr + ' ' + v.p + v.b + FAKE[i], pr + ' ' + others[1].forms[i]];
-  return mc(`<p class="q-label">How do you say it in French?</p><p class="q-big">“${subj} ${words.join(' ')}.”</p>`, pr + ' ' + v.forms[i], wr, fLine(v));
-}
-function fMean(v) {
-  const others = shuffle(FV.filter(x => x !== v));
-  if (Math.random() < .5) return mc(`<p class="q-label">What does this verb mean?</p><p class="q-word">${v.inf}</p>`, esc(v.en), others.map(x => esc(x.en)), fLine(v));
-  return mc(`<p class="q-label">Which verb means…</p><p class="q-big">${esc(v.en)}</p>`, v.inf, others.map(x => x.inf), fLine(v));
-}
 function fFill(t) {
   const cap = t.s.startsWith('___');
-  const opts = ['depuis', 'pendant', 'il y a'].map(o => cap ? o[0].toUpperCase() + o.slice(1) : o);
+  const opts = ['depuis', 'pendant', 'il y a'].map(o => cap ? cap1(o) : o);
   return mc(`<p class="q-label">Depuis, pendant, or il y a?</p><p class="q-big">${gapS(t.s)}</p>`, t.a, opts, `<b>${t.a}</b>: ${esc(t.why)}<br><i>${esc(t.en)}</i>`);
 }
 const fTr = t => mc(`<p class="q-label">Pick the correct French</p><p class="q-big">“${esc(t.en)}”</p>`, esc(t.a), t.w.map(esc), esc(t.why));
 
-function fQuestions(topic) {
-  const pairs = shuffle(FV.flatMap(v => [0, 1, 2, 3, 4, 5].map(i => [v, i])));
-  const verbs = n => [...pairs.slice(0, n - 3).map(([v, i], k) => k % 3 === 2 ? fTrans(v, i) : fConj(v, i)), ...shuffle(FV).slice(0, 3).map(fMean)];
-  const time = (a, b) => [...shuffle(FT).slice(0, a).map(fFill), ...shuffle(FTR).slice(0, b).map(fTr)];
-  if (topic === 'verbs') return shuffle(verbs(18));
-  if (topic === 'time') return shuffle(time(12, 6));
-  return shuffle([...verbs(10), ...time(7, 3)]);
+/* ---------- passé composé: DR MRS VANDERTRAMP ---------- */
+const DRM = [
+  ['D', 'devenir', 'devenu', 'to become'], ['R', 'revenir', 'revenu', 'to come back'], ['M', 'monter', 'monté', 'to go up, to climb'],
+  ['R', 'rester', 'resté', 'to stay'], ['S', 'sortir', 'sorti', 'to go out'], ['V', 'venir', 'venu', 'to come'],
+  ['A', 'aller', 'allé', 'to go'], ['N', 'naître', 'né', 'to be born'], ['D', 'descendre', 'descendu', 'to go down'],
+  ['E', 'entrer', 'entré', 'to enter'], ['R', 'rentrer', 'rentré', 'to come home'], ['T', 'tomber', 'tombé', 'to fall'],
+  ['R', 'retourner', 'retourné', 'to return, to go back'], ['A', 'arriver', 'arrivé', 'to arrive'], ['M', 'mourir', 'mort', 'to die'],
+  ['P', 'partir', 'parti', 'to leave']
+];
+const AVV = [
+  ['manger', 'mangé', 'to eat'], ['acheter', 'acheté', 'to buy'], ['préparer', 'préparé', 'to prepare'], ['finir', 'fini', 'to finish'],
+  ['choisir', 'choisi', 'to choose'], ['attendre', 'attendu', 'to wait for'], ['vendre', 'vendu', 'to sell'], ['dormir', 'dormi', 'to sleep'],
+  ['avoir', 'eu', 'to have'], ['être', 'été', 'to be'], ['faire', 'fait', 'to do, to make'], ['prendre', 'pris', 'to take'],
+  ['mettre', 'mis', 'to put'], ['boire', 'bu', 'to drink'], ['voir', 'vu', 'to see'], ['lire', 'lu', 'to read'],
+  ['devoir', 'dû', 'to have to'], ['pouvoir', 'pu', 'to be able to'], ['vouloir', 'voulu', 'to want'], ['tenir', 'tenu', 'to hold'],
+  ['retenir', 'retenu', 'to hold back'], ['écrire', 'écrit', 'to write'], ['ouvrir', 'ouvert', 'to open'], ['dire', 'dit', 'to say'],
+  ['recevoir', 'reçu', 'to receive'], ['connaître', 'connu', 'to know (a person/place)']
+];
+const ALLV = [...DRM.map(d => ({ L: d[0], inf: d[1], pp: d[2], en: d[3], aux: 'être' })), ...AVV.map(a => ({ inf: a[0], pp: a[1], en: a[2], aux: 'avoir' }))];
+const regPP = inf => inf.endsWith('er') ? inf.slice(0, -2) + 'é' : inf.endsWith('ir') ? inf.slice(0, -2) + 'i' : inf.endsWith('re') ? inf.slice(0, -2) + 'u' : inf + 'é';
+const IRRPP = ALLV.filter(v => regPP(v.inf) !== v.pp);
+const SUBJ = [['je', 0, ''], ['tu', 1, ''], ['il', 2, ''], ['elle', 2, 'e'], ['nous', 3, 's'], ['vous', 4, ''], ['ils', 5, 's'], ['elles', 5, 'es'], ['Marie', 2, 'e'], ['mes parents', 5, 's'], ['Léa et Chloé', 5, 'es']];
+const SAFE = SUBJ.filter(s => !['je', 'tu', 'nous', 'vous'].includes(s[0]));
+const pcWhy = v => v.aux === 'être'
+  ? `<b>${v.inf}</b> is a DR MRS VANDERTRAMP verb, so it uses <b>être</b>, and the participle agrees with the subject (+e feminine, +s plural).`
+  : `<b>${v.inf}</b> uses <b>avoir</b>, so the participle never changes. Past participle: <b>${v.pp}</b>.`;
+function pcQ(v) {
+  const s = pick(v.aux === 'être' ? SAFE : SUBJ), other = v.aux === 'être' ? 'avoir' : 'être';
+  const ph = (aux, pp) => cap1(pj(s[0], AUX[aux][s[1]] + ' ' + pp));
+  const right = ph(v.aux, v.pp + (v.aux === 'être' ? s[2] : ''));
+  const wr = [ph(other, v.pp), ph(v.aux, v.pp + (v.aux === 'être' ? (s[2] ? '' : 'e') : (s[2] || 'e'))), ph(other, v.pp + s[2]), ph(v.aux, v.inf)];
+  return mc(`<p class="q-label">Passé composé</p><p class="q-math">${s[0]} + ${v.inf}</p><p class="muted" style="text-align:center;font-size:.9rem;margin-top:6px">${esc(v.en)}</p>`, right, wr, pcWhy(v));
+}
+const auxQ = v => mc(`<p class="q-label">Which helper verb in the passé composé?</p><p class="q-word">${v.inf} <em>${esc(v.en)}</em></p>`, v.aux, [v.aux === 'être' ? 'avoir' : 'être'], pcWhy(v));
+const ppQ = v => mc(`<p class="q-label">What is the past participle?</p><p class="q-word">${v.inf} <em>${esc(v.en)}</em></p>`, v.pp, [regPP(v.inf), v.inf, pick(IRRPP.filter(x => x !== v)).pp], `${v.inf} → <b>${v.pp}</b> (irregular). ${v.aux === 'être' ? 'Uses être.' : 'Uses avoir.'}`);
+const SORT = [
+  ['I took out the trash.', "J'ai sorti la poubelle.", ['Je suis sorti la poubelle.', 'Je suis sortie la poubelle.', "J'ai sortie la poubelle."], 'Sortir + an object (la poubelle) uses avoir, with no agreement.'],
+  ['She went out last night.', 'Elle est sortie hier soir.', ['Elle a sorti hier soir.', 'Elle est sorti hier soir.', 'Elle a sortie hier soir.'], 'No object: sortir uses être, and elle adds -e.'],
+  ['He brought the suitcases up.', 'Il a monté les valises.', ['Il est monté les valises.', 'Il a montés les valises.', 'Il est montées les valises.'], 'Monter + an object uses avoir.'],
+  ['They (f.) came home at midnight.', 'Elles sont rentrées à minuit.', ['Elles ont rentré à minuit.', 'Elles sont rentré à minuit.', 'Elles sont rentrés à minuit.'], 'Rentrer with no object uses être; elles adds -es.'],
+  ['We (m.) stayed home.', 'Nous sommes restés à la maison.', ['Nous avons resté à la maison.', 'Nous sommes resté à la maison.', 'Nous avons restés à la maison.'], 'Rester is a DR MRS verb: être, and nous (masc. plural) adds -s.'],
+  ['My grandmother was born in 1950.', 'Ma grand-mère est née en 1950.', ['Ma grand-mère a né en 1950.', 'Ma grand-mère est né en 1950.', 'Ma grand-mère a née en 1950.'], 'Naître uses être; past participle né, + e for feminine.']
+];
+const sortQ = t => mc(`<p class="q-label">Pick the correct French</p><p class="q-big">“${esc(t[0])}”</p>`, esc(t[1]), t[2].map(esc), esc(t[3]));
+
+/* ---------- être, avoir & irregulars ---------- */
+const IRR = [
+  ['être', 'to be', ['suis', 'es', 'est', 'sommes', 'êtes', 'sont'], "j'ai été", 'ét'],
+  ['avoir', 'to have', ['ai', 'as', 'a', 'avons', 'avez', 'ont'], "j'ai eu", 'av'],
+  ['aller', 'to go', ['vais', 'vas', 'va', 'allons', 'allez', 'vont'], 'je suis allé(e)', 'all'],
+  ['faire', 'to do, to make', ['fais', 'fais', 'fait', 'faisons', 'faites', 'font'], "j'ai fait", 'fais'],
+  ['devoir', 'must, to have to', ['dois', 'dois', 'doit', 'devons', 'devez', 'doivent'], "j'ai dû", 'dev'],
+  ['pouvoir', 'can, to be able to', ['peux', 'peux', 'peut', 'pouvons', 'pouvez', 'peuvent'], "j'ai pu", 'pouv'],
+  ['vouloir', 'to want', ['veux', 'veux', 'veut', 'voulons', 'voulez', 'veulent'], "j'ai voulu", 'voul'],
+  ['prendre', 'to take, to have (food)', ['prends', 'prends', 'prend', 'prenons', 'prenez', 'prennent'], "j'ai pris", 'pren'],
+  ['boire', 'to drink', ['bois', 'bois', 'boit', 'buvons', 'buvez', 'boivent'], "j'ai bu", 'buv'],
+  ['mettre', 'to put', ['mets', 'mets', 'met', 'mettons', 'mettez', 'mettent'], "j'ai mis", 'mett']
+];
+const IMPEND = ['ais', 'ais', 'ait', 'ions', 'iez', 'aient'];
+const irLine = v => `<b>${v[0]}</b>: ${v[2].map((f, k) => pj(PRON[k].split('/')[0], f)).join(', ')}.`;
+const irConj = (v, i) => mc(`<p class="q-label">Present tense of ${v[0]} (${esc(v[1])})</p><p class="q-math">${i === 0 && isV(v[2][0]) ? "j'" : PRON[i]} <span class="gap"></span></p>`, v[2][i], shuffle(v[2]), irLine(v));
+const DPV = { devoir: ['dû', ['faire les courses', 'travailler samedi', 'rentrer avant minuit']], pouvoir: ['pu', ['sortir avec des amis', 'venir à la fête', 'finir le gâteau']], vouloir: ['voulu', ['faire la cuisine', 'aller au marché', 'manger au restaurant']] };
+const CLUES = { pres: ["Aujourd'hui,", 'Maintenant,', 'Ce soir,'], pc: ['Hier,', 'Samedi dernier,', 'Ce matin,'], imp: ['Autrefois,', 'Avant,', 'Quand nous étions petits,'] };
+const TSUBJ = [['je', 0], ['tu', 1], ['Julien', 2], ['elle', 2], ['nous', 3], ['vous', 4], ['mes amis', 5]];
+function tenseQ() {
+  const inf = pick(Object.keys(DPV)), v = IRR.find(x => x[0] === inf), [pp, rests] = DPV[inf];
+  const [s, i] = pick(TSUBJ), t = pick(['pres', 'pc', 'imp']), clue = pick(CLUES[t]);
+  const F3 = { pres: v[2][i], pc: AUX.avoir[i] + ' ' + pp, imp: v[4] + IMPEND[i] };
+  const ph = k => pj(s, F3[k]);
+  const c = clue.slice(0, -1);
+  const why = { pres: `“${c}” is about now, so use the present.`, pc: `“${c}” is one finished moment, so use the passé composé (avoir + ${pp}).`, imp: `“${c}” means back then / used to, so use the imparfait (${v[4]}- + ais, ais, ait, ions, iez, aient).` }[t];
+  return mc(`<p class="q-label">Watch the time clue</p><p class="q-big">${esc(clue)} <span class="gap"></span> (${inf}) ${esc(pick(rests))}.</p>`, ph(t), [...['pres', 'pc', 'imp'].filter(k => k !== t).map(ph), pj(s, AUX['être'][i] + ' ' + pp)], why);
 }
 
-function fItems() {
-  const vs = FR.topic === 'time' ? [] : FV.map(v => ({ id: 'fv-' + v.inf, front: `<p class="fc-word">${v.inf}</p><span class="fc-pos">present tense</span>`, back: `<p class="fc-def">${esc(v.en)}</p>${fTable(v)}` }));
-  const ts = FR.topic === 'verbs' ? [] : [
-    { id: 'fr-depuis', front: '<p class="fc-word">depuis</p>', back: '<p class="ans">for / since (still going on)</p><p class="why">depuis + PRESENT tense</p><p class="ex">J\'habite ici depuis trois ans. (I\'ve lived here for 3 years.)</p>' },
-    { id: 'fr-pendant', front: '<p class="fc-word">pendant</p>', back: '<p class="ans">for / during (a set length of time)</p><p class="why">works with any tense, usually passé composé</p><p class="ex">J\'ai dormi pendant huit heures. (I slept for 8 hours.)</p>' },
-    { id: 'fr-ilya', front: '<p class="fc-word">il y a</p>', back: '<p class="ans">ago</p><p class="why">il y a + time, with the passé composé</p><p class="ex">Je suis arrivé il y a deux jours. (I arrived 2 days ago.)</p>' },
-    { id: 'fr-ilyaque', front: '<p class="fc-word">il y a … que</p>', back: '<p class="ans">same as depuis</p><p class="why">il y a + time + que + PRESENT</p><p class="ex">Il y a deux ans que je fais du karaté. = Je fais du karaté depuis deux ans.</p>' },
-    ...FT.map((t, k) => ({ id: 'ft' + k, front: `<span class="cardno">Depuis, pendant, or il y a?</span><p class="fc-q">${gapS(t.s)}</p>`, back: `<p class="ans">${t.a}</p><p class="why">${esc(t.why)}</p><p class="ex">${esc(t.en)}</p>` }))
-  ];
-  return [...vs, ...ts];
-}
+/* ---------- comparisons ---------- */
+const COMP = [
+  ['+ grand', "Le supermarché est ___ que l'épicerie.", 'plus grand', ['plus grande', 'moins grand', 'aussi grand'], 'plus + adjective + que. Supermarché is masculine: grand.'],
+  ['− cher', 'Les carottes sont ___ que les fraises.', 'moins chères', ['moins chers', 'plus chères', 'moins cher'], 'moins + adjective + que. Carottes is feminine plural: chères.'],
+  ['= bon', 'Ce gâteau est ___ que la tarte.', 'aussi bon', ['aussi bonne', 'meilleur', 'plus bon'], 'aussi + adjective + que. Gâteau is masculine: bon.'],
+  ['+ bon', 'Le pain de la boulangerie est ___ que le pain du supermarché.', 'meilleur', ['plus bon', 'mieux', 'plus meilleur'], 'Never “plus bon”: bon → meilleur (better).'],
+  ['+ bon', 'Cette pizza est ___ que la pizza de la cantine.', 'meilleure', ['plus bonne', 'mieux', 'meilleur'], 'bon → meilleur, and it agrees: pizza is feminine, so meilleure.'],
+  ['+ bien', 'Paul cuisine ___ que moi.', 'mieux', ['meilleur', 'plus bien', 'plus mieux'], 'Cuisine is a verb, so you need the adverb: bien → mieux.'],
+  ['− bien', 'Je chante ___ que ma sœur.', 'moins bien', ['moins mieux', 'moins bon', 'meilleur'], 'Less well = moins bien. Only “more” changes: plus bien → mieux.'],
+  ['+ mauvais', 'Ce café est ___ que le café de chez moi.', 'plus mauvais', ['plus mal', 'mauvaiser', 'plus mauvaise'], '+ mauvais = plus mauvais (or pire). Café is masculine.'],
+  ['= délicieux', 'Les poires sont ___ que les pommes.', 'aussi délicieuses', ['aussi délicieux', 'plus délicieuses', 'aussi délicieuse'], 'aussi … que = as … as. Poires is feminine plural: délicieuses.'],
+  ['+ froid', 'Le jus est ___ que le café.', 'plus froid', ['plus froide', 'aussi froid', 'moins froid'], 'plus + adjective + que. Jus is masculine.'],
+  ['superlative', 'Cette pâtisserie fait de bons gâteaux. Elle fait ___ du quartier.', 'les meilleurs gâteaux', ['les plus bons gâteaux', 'le meilleur gâteaux', 'les mieux gâteaux'], 'bon → le/la/les meilleur(e)(s), placed before the noun, then de: du quartier.'],
+  ['superlative', "Ce supermarché est grand. C'est ___ du quartier.", 'le plus grand supermarché', ['la plus grande supermarché', 'le plus grande supermarché', 'le supermarché plus grand'], 'grand goes before the noun (BAGS): le plus grand + noun. (Le supermarché le plus grand also works.)'],
+  ['superlative', 'Mes voisines sont sympas. Ce sont ___ du quartier.', 'les voisines les plus sympas', ['les voisines plus sympas', 'les plus voisines sympas', 'la voisine la plus sympa'], 'Adjective after the noun → repeat the article: les voisines LES plus sympas.'],
+  ['superlative', "Cette épicerie est chère. C'est ___ du quartier.", "l'épicerie la plus chère", ["l'épicerie le plus cher", 'la plus épicerie chère', "l'épicerie plus chère"], 'cher goes after the noun → l’épicerie la plus chère (feminine).'],
+  ['superlative', "Ce boucher est gentil. C'est ___ du quartier.", 'le boucher le plus gentil', ['le plus boucher gentil', 'le boucher plus gentil', 'la boucher la plus gentille'], 'Article + noun + article + plus + adjective.'],
+  ['superlative', "Cette boulangerie est excellente. C'est ___ du quartier.", 'la meilleure boulangerie', ['la plus bonne boulangerie', 'le meilleur boulangerie', 'la mieux boulangerie'], 'Best (adjective) = le/la meilleur(e). Boulangerie is feminine → la meilleure.'],
+  ['superlative', "Ce restaurant est vieux. C'est ___ du quartier.", 'le plus vieux restaurant', ['le restaurant plus vieux', 'la plus vieille restaurant', 'le plus vieil restaurant'], 'vieux goes before the noun (BAGS): le plus vieux restaurant.'],
+  ['superlative', "Marc cuisine très bien. Dans sa famille, c'est lui qui cuisine ___.", 'le mieux', ['le meilleur', 'la mieux', 'plus mieux'], 'Cuisine is a verb → adverb: bien → le mieux (the best).']
+];
+const compQ = t => mc(`<p class="q-label">${t[0] === 'superlative' ? 'Superlative: the most / the best' : 'Compare (' + esc(t[0]) + ')'}</p><p class="q-big">${gapS(t[1])}</p>`, t[2], t[3], esc(t[4]));
 
-function fSheet() {
-  const verbs = `
-    <h2 class="sec-head">Verbs: venir, tenir &amp; family</h2>
-    <div class="card"><p class="eyebrow">The pattern</p>
-      <p style="margin:6px 0 10px">All five verbs follow one pattern. Revenir is re + venir. Retenir and maintenir are re + tenir and main + tenir. Learn venir and tenir and you know all five.</p>
-      <ul class="list">
-        <li><b>Endings:</b> -s, -s, -t, -ons, -ez, -ent.</li>
-        <li><b>The boot:</b> je, tu, il/elle/on, and ils/elles get the stem <b>-ien-</b> (viens, tient). Nous and vous keep the plain stem (venons, tenez).</li>
-        <li><b>Ils/elles doubles the n:</b> viennent, tiennent, maintiennent.</li>
-      </ul>
-      <p class="legend"><i></i> Shaded boxes are inside the boot.</p>
-    </div>
-    <div class="sheet">${FV.map(v => `<div class="card"><h3>${v.inf} <span class="pos">${esc(v.en)}</span></h3>${fTable(v)}</div>`).join('')}</div>`;
-  const time = `
-    <h2 class="sec-head">Textbook p. 63: depuis, pendant, il y a</h2>
-    <div class="time3">
-      <div class="card"><p class="tword">depuis</p><p class="tmean">for / since. Still happening now.</p><p class="formula">PRESENT + depuis + time</p>
-        <p class="fx">J'habite ici depuis trois ans.<i>I've lived here for three years (and still do).</i></p>
-        <p class="fx">Il pleut depuis lundi.<i>It's been raining since Monday.</i></p></div>
-      <div class="card"><p class="tword">pendant</p><p class="tmean">for / during. A set length of time.</p><p class="formula">any tense + pendant + time</p>
-        <p class="fx">J'ai dormi pendant huit heures.<i>I slept for eight hours.</i></p>
-        <p class="fx">Pendant le film, on mange du pop-corn.<i>During the movie, we eat popcorn.</i></p></div>
-      <div class="card"><p class="tword">il y a</p><p class="tmean">ago. One moment in the past.</p><p class="formula">PASSÉ COMPOSÉ + il y a + time</p>
-        <p class="fx">Je suis arrivé il y a deux jours.<i>I arrived two days ago.</i></p>
-        <p class="fx">Il y a trois ans que j'habite ici.<i>Il y a … que + present = depuis.</i></p></div>
-    </div>
-    <div class="sheet">
-      <div class="card"><h3>Which one? Ask yourself</h3><ol class="steps">
-        <li>Does the English say <b>“ago”</b>? Use <b>il y a</b>.</li>
-        <li>Is it <b>still going on</b> (“have been…”)? Use <b>depuis</b> with the <b>present</b> tense.</li>
-        <li>Is it a <b>finished or planned</b> length of time, or “during”? Use <b>pendant</b>.</li></ol>
-        <p class="muted" style="margin:10px 0 0;font-size:.9rem">Trap: English says “I <i>have been</i> waiting”, but French uses the present: <b>J'attends depuis…</b>, never “J'ai attendu depuis”.</p></div>
-      <div class="card"><h3>Asking the question</h3><ul class="list">
-        <li><b>Depuis quand…?</b> Since when? Answer with a starting point: depuis lundi, depuis 2020.</li>
-        <li><b>Depuis combien de temps…?</b> How long (so far)? Answer with a length: depuis deux ans.</li>
-        <li><b>Pendant combien de temps…?</b> How long (finished)? Answer: pendant une heure.</li>
-        <li><b>Il y a combien de temps que…?</b> Same as depuis combien de temps.</li></ul></div>
-    </div>`;
-  return `<div class="panel">${FR.topic !== 'time' ? verbs : ''}${FR.topic !== 'verbs' ? time : ''}</div>`;
+/* ---------- food & market ---------- */
+const FOOD = [
+  ['la pomme', 'apple', 'fruit', 'rouge'], ['la poire', 'pear', 'fruit', 'vert'], ['la fraise', 'strawberry', 'fruit', 'rouge'], ['la cerise', 'cherry', 'fruit', 'rouge'],
+  ['la banane', 'banana', 'fruit', 'jaune'], ['le citron', 'lemon', 'fruit', 'jaune'], ["l'orange", 'orange', 'fruit', 'orange'], ['la pêche', 'peach', 'fruit', 'orange'],
+  ['le raisin', 'grapes', 'fruit', ''], ['la tomate', 'tomato', 'veg', 'rouge'],
+  ['la carotte', 'carrot', 'veg', 'orange'], ["l'oignon", 'onion', 'veg', 'blanc'], ["l'ail", 'garlic', 'veg', 'blanc'], ['le champignon', 'mushroom', 'veg', 'blanc'],
+  ['la laitue', 'lettuce', 'veg', 'vert'], ['les haricots verts', 'green beans', 'veg', 'vert'], ['les petits pois', 'peas', 'veg', 'vert'], ['la pomme de terre', 'potato', 'veg', ''],
+  ['le poivron', 'bell pepper', 'veg', ''], ['le maïs', 'corn', 'veg', 'jaune'],
+  ['le bœuf', 'beef', 'meat'], ['le porc', 'pork', 'meat'], ['le poulet', 'chicken', 'meat'], ['le steak', 'steak', 'meat'], ['le jambon', 'ham', 'meat'],
+  ['le pâté', 'pâté (meat spread)', 'meat'], ['la saucisse', 'sausage', 'meat'], ['le poisson', 'fish', 'meat'], ['le thon', 'tuna', 'meat'],
+  ['les fruits de mer', 'seafood', 'meat'], ['les escargots', 'snails', 'meat'], ['la viande', 'meat', 'meat'],
+  ['les œufs', 'eggs', 'other'], ['le pain', 'bread', 'other'], ['le croissant', 'croissant', 'other'], ['le fromage', 'cheese', 'other'], ['le beurre', 'butter', 'other'],
+  ['la crème', 'cream', 'other'], ['la confiture', 'jam', 'other'], ['le yaourt', 'yogurt', 'other'], ['le riz', 'rice', 'other'], ['les pâtes', 'pasta', 'other'],
+  ['la tarte', 'pie, tart', 'other'], ['le gâteau', 'cake', 'other'], ['le sucre', 'sugar', 'other'], ['le sel', 'salt', 'other'], ['le poivre', 'pepper (spice)', 'other'],
+  ['le petit-déjeuner', 'breakfast', 'meal'], ['le déjeuner', 'lunch', 'meal'], ['le goûter', 'afternoon snack', 'meal'], ['le dîner', 'dinner', 'meal'],
+  ['la cantine', 'cafeteria', 'meal'], ['un repas', 'a meal', 'meal'], ['la nourriture', 'food', 'meal'], ['avoir faim', 'to be hungry', 'meal'],
+  ['avoir soif', 'to be thirsty', 'meal'], ['être au régime', 'to be on a diet', 'meal'],
+  ["l'assiette", 'plate', 'table'], ['le bol', 'bowl', 'table'], ['la cuillère', 'spoon', 'table'], ['la fourchette', 'fork', 'table'], ['le couteau', 'knife', 'table'],
+  ['la serviette', 'napkin', 'table'], ['la nappe', 'tablecloth', 'table'], ['le verre', 'glass', 'table'], ['la tasse', 'cup', 'table'], ["la carafe d'eau", 'pitcher of water', 'table'],
+  ['la carte', 'the menu (list of dishes)', 'resto'], ['le menu', 'fixed-price meal', 'resto'], ['commander', 'to order', 'resto'], ['le serveur / la serveuse', 'server', 'resto'],
+  ["l'entrée", 'appetizer', 'resto'], ['le plat principal', 'main course', 'resto'], ["l'addition", 'the check, the bill', 'resto'], ['le pourboire', 'tip', 'resto'],
+  ['(service) compris', '(tip) included', 'resto'], ['un kilo de', 'a kilo of', 'resto'], ['une tranche de', 'a slice of', 'resto'], ['un morceau de', 'a piece of', 'resto'],
+  ['Ça fait combien ?', 'How much is it?', 'resto'], ['coûter', 'to cost', 'resto']
+];
+const FCATS = [['fruit', 'Fruits'], ['veg', 'Vegetables'], ['meat', 'Meat & fish'], ['other', 'Other foods'], ['meal', 'Meals'], ['table', 'At the table'], ['resto', 'Restaurant & market']];
+const COLORS = [
+  ['rouge', '#D63A2F', 'la fraise, la cerise, la tomate, la pomme, le poivron rouge'],
+  ['blanc', '#F4F1E8', "l'oignon, l'ail, le champignon, le chou-fleur"],
+  ['vert', '#4C9A3B', 'les haricots verts, les petits pois, la laitue, la poire, le poivron vert'],
+  ['jaune', '#F2C925', 'la banane, le citron, le maïs, la pomme jaune'],
+  ['orange', '#F08A24', "la carotte, l'orange, la pêche, le melon"]
+];
+const SHOPS = [
+  ['la boulangerie', 'bakery', 'du pain, des baguettes, des croissants'], ['la pâtisserie', 'pastry shop', 'des gâteaux, des tartes'],
+  ['la boucherie', 'butcher shop', 'du bœuf, du steak, du poulet'], ['la charcuterie', 'deli (pork shop)', 'du jambon, du pâté, des saucisses'],
+  ['la poissonnerie', 'fish shop', 'du poisson, du thon, des fruits de mer'], ["l'épicerie", 'small grocery store', 'du riz, des pâtes, du sucre'],
+  ['le supermarché', 'supermarket', 'a bit of everything'], ['le marché', 'open-air market', 'fruits and vegetables']
+];
+const SHOPITEMS = [['du jambon', 'la charcuterie'], ['du pâté', 'la charcuterie'], ['des saucisses', 'la charcuterie'], ['une baguette', 'la boulangerie'], ['du pain', 'la boulangerie'],
+  ['un gâteau au chocolat', 'la pâtisserie'], ['une tarte aux fraises', 'la pâtisserie'], ['du steak', 'la boucherie'], ['du bœuf', 'la boucherie'], ['du thon', 'la poissonnerie'], ['des fruits de mer', 'la poissonnerie']];
+const SPEC = ['la boulangerie', 'la pâtisserie', 'la boucherie', 'la charcuterie', 'la poissonnerie'];
+const PARTS = ['du', 'de la', "de l'", 'des'];
+const PART = [
+  ['Au petit-déjeuner, je mange ___ pain.', 'du', PARTS, 'Pain is masculine → du (some).'],
+  ['Tu veux ___ confiture ?', 'de la', PARTS, 'Confiture is feminine → de la.'],
+  ["Elle achète ___ œufs pour l'omelette.", 'des', PARTS, 'Plural → des.'],
+  ['Nous buvons ___ eau minérale.', "de l'", PARTS, "Eau starts with a vowel → de l'."],
+  ['Je ne mange jamais ___ viande.', 'de', ['de', 'de la', 'du', 'la'], 'After a negative (ne… pas, ne… jamais), du / de la / des become de.'],
+  ["Il n'y a plus ___ lait.", 'de', ['de', 'du', 'de la', 'le'], 'After ne… plus → de.'],
+  ["Je voudrais un kilo ___ tomates, s'il vous plaît.", 'de', ['de', 'des', 'du', 'les'], 'After a quantity → de.'],
+  ["Une tranche ___ jambon, s'il vous plaît.", 'de', ['de', 'du', 'de la', 'le'], 'After a quantity → de.'],
+  ["J'adore ___ fromage !", 'le', ['le', 'du', 'de', 'de la'], 'After aimer, adorer, préférer, détester → le / la / les (the thing in general).'],
+  ['Pour le dîner, on prend ___ fruits de mer.', 'des', ['des', 'du', 'de', 'les'], 'Plural "some" → des.'],
+  ['Ma sœur déteste ___ poires.', 'les', ['les', 'des', 'de', 'du'], 'After détester → les.']
+];
+const LOGIC = [
+  ['Au marché, le marchand demande : « Vous désirez, madame ? »', "Un kilo de pommes, s'il vous plaît.", ['Depuis deux heures.', 'C’est compris.', 'À la cantine.'], 'He asks what she wants, so she orders something.'],
+  ['Au marché : « Ça fait combien ? »', 'Ça fait quatre euros cinquante.', ['Ça fait un kilo et demi.', "Une tranche, s'il vous plaît.", 'C’est pour la crème.'], 'Combien = how much → a price.'],
+  ['Au dîner : « Tu reprends du gâteau ? »', 'Non merci, je suis au régime.', ['Il y a deux heures.', 'À la boucherie.', 'Ça fait un kilo.'], 'A yes/no offer of more food → accept or refuse.'],
+  ['Au restaurant : « Tu manges du steak ? »', 'Non, je ne mange jamais de viande.', ['Une tarte aux poires.', 'Depuis midi.', 'C’est dans un vieil immeuble.'], 'Steak is meat → “never meat” answers it.'],
+  ['« Tu ne manges pas de poisson ? »', 'Si, mais je préfère le poulet.', ['Oui, je mange du poisson.', 'Non, je mange du poisson.', 'Ça fait cinq euros.'], 'Answering YES to a negative question = Si (not oui).'],
+  ['Dans le parc : « Depuis combien de temps tu m’attends ? »', 'Depuis vingt minutes.', ['Il y a vingt minutes.', 'À vingt minutes.', 'Pendant vingt minutes hier.'], 'Depuis combien de temps → depuis + time.'],
+  ['« Le service est compris ? »', 'Oui, mais on peut laisser un pourboire.', ['Oui, une tranche.', "Non, je n'ai pas faim.", 'C’est pour les pâtes.'], 'Service compris = tip included.'],
+  ['« Qu’est-ce que tu prends comme dessert ? »', 'Une tarte aux poires.', ['Un pâté de campagne.', 'Un steak et des petits pois.', 'Le petit-déjeuner.'], 'Dessert → something sweet.'],
+  ['« Où est-ce que tu déjeunes pendant la semaine ? »', 'À la cantine.', ['Un petit-déjeuner.', 'Un steak et des petits pois.', "De la confiture, s'il vous plaît."], 'Où = where → a place.']
+];
+const vocabQ = f => {
+  const same = shuffle(FOOD.filter(x => x !== f && x[2] === f[2]));
+  const ex = `<b>${esc(f[0])}</b> = ${esc(f[1])}`;
+  return Math.random() < .5
+    ? mc(`<p class="q-label">What does this mean?</p><p class="q-word">${esc(f[0])}</p>`, esc(f[1]), same.map(x => esc(x[1])), ex)
+    : mc(`<p class="q-label">How do you say it in French?</p><p class="q-big">${esc(f[1])}</p>`, esc(f[0]), same.map(x => esc(x[0])), ex);
+};
+const shopQ = ([item, shop]) => mc(`<p class="q-label">Where do you go to buy…</p><p class="q-big">${esc(item)}</p>`, shop, shuffle(SPEC.filter(s => s !== shop)), `<b>${shop}</b> = ${SHOPS.find(s => s[0] === shop)[1]}: ${SHOPS.find(s => s[0] === shop)[2]}.`);
+function colorQ() {
+  const c = pick(['rouge', 'blanc', 'vert', 'jaune', 'orange']);
+  const f = pick(FOOD.filter(x => x[3] === c));
+  return mc(`<p class="q-label">Les couleurs et les aliments</p><p class="q-big">Which one is usually <b>${c}</b>?</p>`, esc(f[0]), shuffle(FOOD.filter(x => x[3] && x[3] !== c)).map(x => esc(x[0])), `${esc(f[0])} (${esc(f[1])}) is ${c}.`);
 }
+const partQ = t => mc(`<p class="q-label">Pick the article</p><p class="q-big">${gapS(t[0])}</p>`, esc(t[1]), t[2].filter(c => c !== t[1]).map(esc), esc(t[3]));
+const logicQ = t => mc(`<p class="q-label">Most logical reply</p><p class="q-big">${esc(t[0])}</p>`, esc(t[1]), t[2].map(esc), esc(t[3]));
 
+/* ---------- quiz builders ---------- */
+const QZ = {
+  food(n) {
+    const nv = Math.round(n * .35), ns = Math.round(n * .15), nc = Math.round(n * .15), np = Math.round(n * .2), nl = Math.max(0, n - nv - ns - nc - np);
+    return shuffle([...shuffle(FOOD).slice(0, nv).map(vocabQ), ...shuffle(SHOPITEMS).slice(0, ns).map(shopQ), ...Array.from({ length: nc }, colorQ), ...shuffle(PART).slice(0, np).map(partQ), ...shuffle(LOGIC).slice(0, nl).map(logicQ)]);
+  },
+  verbs(n) {
+    const out = [...shuffle(VCTX).slice(0, Math.round(n / 4)).map(ctxQ), ...shuffle(FV).slice(0, n >= 8 ? 2 : 0).map(fMean), ...shuffle(FV).slice(0, Math.round(n / 8)).map(v => pcQ({ ...v, en: v.en }))];
+    const pairs = shuffle(FV.flatMap(v => [0, 1, 2, 3, 4, 5].map(i => [v, i])));
+    for (let k = 0; out.length < n; k++) { const [v, i] = pairs[k]; out.push(k % 3 === 2 ? fTrans(v, i) : fConj(v, i)); }
+    return shuffle(out);
+  },
+  time: n => shuffle([...shuffle(FT).slice(0, Math.ceil(n * 2 / 3)).map(fFill), ...shuffle(FTR).slice(0, Math.floor(n / 3)).map(fTr)]),
+  drm(n) {
+    const na = Math.round(n / 4), ns = Math.floor(n / 8), np = Math.round(n / 4), npc = n - na - ns - np;
+    return shuffle([...shuffle(ALLV).slice(0, na).map(auxQ), ...shuffle(SORT).slice(0, ns).map(sortQ), ...shuffle(IRRPP).slice(0, np).map(ppQ), ...shuffle(ALLV).slice(0, npc).map(pcQ)]);
+  },
+  irreg(n) {
+    const pairs = shuffle(IRR.flatMap(v => [0, 1, 2, 3, 4, 5].map(i => [v, i])));
+    return shuffle([...pairs.slice(0, Math.ceil(n / 2)).map(([v, i]) => irConj(v, i)), ...Array.from({ length: Math.floor(n / 2) }, tenseQ)]);
+  },
+  comp: n => shuffle(COMP).slice(0, n).map(compQ)
+};
+
+/* ---------- flashcards ---------- */
+const rule = (id, w, a, why, ex) => ({ id, front: `<p class="fc-word">${w}</p>`, back: `<p class="ans">${a}</p>${why ? `<p class="why">${why}</p>` : ''}${ex ? `<p class="ex">${ex}</p>` : ''}` });
+const CARDS = {
+  food: () => [...FOOD.map((f, k) => ({ id: 'ff' + k, front: `<span class="cardno">${FCATS.find(c => c[0] === f[2])[1]}</span><p class="fc-word">${esc(f[0])}</p>`, back: `<p class="ans">${esc(f[1])}</p>` })),
+    ...SHOPS.map((s, k) => ({ id: 'fs' + k, front: `<span class="cardno">Shops</span><p class="fc-word">${esc(s[0])}</p>`, back: `<p class="ans">${s[1]}</p><p class="why">${esc(s[2])}</p>` }))],
+  verbs: () => FV.map(v => ({ id: 'fv-' + v.inf, front: `<p class="fc-word">${v.inf}</p><span class="fc-pos">present tense</span>`, back: `<p class="fc-def">${esc(v.en)}</p>${fTable(v)}` })),
+  time: () => [
+    rule('fr-depuis', 'depuis', 'for / since (still going on)', 'depuis + PRESENT tense', "J'habite ici depuis trois ans. (I've lived here for 3 years.)"),
+    rule('fr-pendant', 'pendant', 'for / during (a set length of time)', 'works with any tense, usually passé composé', "J'ai dormi pendant huit heures. (I slept for 8 hours.)"),
+    rule('fr-ilya', 'il y a', 'ago', 'il y a + time, with the passé composé', 'Je suis arrivé il y a deux jours. (I arrived 2 days ago.)'),
+    rule('fr-ilyaque', 'il y a … que', 'same as depuis', 'il y a + time + que + PRESENT', 'Il y a deux ans que je fais du karaté. = Je fais du karaté depuis deux ans.'),
+    ...FT.map((t, k) => ({ id: 'ft' + k, front: `<span class="cardno">Depuis, pendant, or il y a?</span><p class="fc-q">${gapS(t.s)}</p>`, back: `<p class="ans">${t.a}</p><p class="why">${esc(t.why)}</p><p class="ex">${esc(t.en)}</p>` }))],
+  drm: () => [
+    rule('fd-rule', 'DR MRS VANDERTRAMP', 'These 16 verbs use être in the passé composé', 'Everything else uses avoir (plus all reflexive verbs use être).', 'Devenir Revenir Monter Rester Sortir Venir Aller Naître Descendre Entrer Rentrer Tomber Retourner Arriver Mourir Partir'),
+    rule('fd-agree', 'être verbs: agreement', 'The participle agrees with the subject', '+e feminine, +s plural, +es feminine plural', 'Il est allé · Elle est allée · Ils sont allés · Elles sont allées'),
+    rule('fd-avoir', 'avoir verbs: agreement?', 'No: the participle stays the same', '', 'Elle a mangé · Ils ont fini · Nous avons pris'),
+    rule('fd-sortir', 'sortir / monter / descendre / rentrer + an object', 'use avoir', '', 'Elle est sortie. (She went out.) BUT Elle a sorti la poubelle. (She took out the trash.)'),
+    ...DRM.map((d, k) => ({ id: 'fd' + k, front: `<span class="cardno">${d[0]} · DR MRS VANDERTRAMP</span><p class="fc-word">${d[1]}</p>`, back: `<p class="ans">${d[2]}</p><p class="why">${d[3]}</p><p class="ex">elle est ${d[2]}e · ils sont ${d[2]}s</p>` })),
+    ...IRRPP.filter(v => v.aux === 'avoir').map(v => ({ id: 'fp-' + v.inf, front: `<span class="cardno">Irregular past participle</span><p class="fc-word">${v.inf}</p>`, back: `<p class="ans">${v.pp}</p><p class="why">${esc(v.en)} · ${pj('je', AUX.avoir[0] + ' ' + v.pp)}</p>` }))],
+  irreg: () => [
+    ...IRR.map(v => ({ id: 'fi-' + v[0], front: `<p class="fc-word">${v[0]}</p><span class="fc-pos">present tense</span>`, back: `<p class="fc-def">${esc(v[1])}</p>${conjTable(v[2])}<p class="pcline">Passé composé: <b>${v[3]}</b> · Imparfait: <b>${pj('je', v[4] + 'ais')}</b></p>` })),
+    rule('fi-pres', "aujourd'hui · maintenant", 'PRESENT', '', "Aujourd'hui, je dois faire les courses."),
+    rule('fi-pc', 'hier · samedi dernier · une fois', 'PASSÉ COMPOSÉ', 'one finished moment', 'Hier, Julien a voulu sortir, mais ses amis n’ont pas pu.'),
+    rule('fi-imp', 'autrefois · avant · toujours (back then)', 'IMPARFAIT', 'used to / ongoing in the past', 'Autrefois, Patrick voulait toujours faire la cuisine.')],
+  comp: () => [
+    rule('fc1', 'plus … que', 'more … than', '', "Le supermarché est plus grand que l'épicerie."),
+    rule('fc2', 'moins … que', 'less … than', '', 'Les carottes sont moins chères que les fraises.'),
+    rule('fc3', 'aussi … que', 'as … as', '', 'Ce gâteau est aussi bon que la tarte.'),
+    rule('fc4', 'bon → ?', 'meilleur(e)(s) = better', 'never “plus bon”', 'Ce pain est meilleur. · le meilleur pain du quartier'),
+    rule('fc5', 'bien → ?', 'mieux = better', 'adverb: describes a verb', 'Paul cuisine mieux que moi. · C’est lui qui cuisine le mieux.'),
+    rule('fc6', 'mauvais → ?', 'plus mauvais (or pire) = worse', '', 'Ce café est plus mauvais que l’autre.'),
+    rule('fc7', 'the most … (superlative)', 'le / la / les + plus + adjective + de', 'adjective after the noun: repeat the article', 'C’est le restaurant le plus charmant du quartier.'),
+    rule('fc8', 'BAGS adjectives', 'go BEFORE the noun', 'Beauty, Age, Goodness, Size: beau, joli, vieux, jeune, nouveau, bon, mauvais, grand, petit', 'C’est le plus grand marché du quartier.')]
+};
+
+/* ---------- study sheets ---------- */
+const OV = [
+  ['food', 'Listening: pick the logical reply', 'Food & market quiz'],
+  ['food', 'Fruits & vegetables by color', 'rouge · blanc · vert · jaune · orange'],
+  ['verbs', 'Venir, tenir, devenir… in sentences', 'present + passé composé'],
+  ['time', 'Answer with depuis / pendant / il y a', 'full-sentence answers'],
+  ['irreg', 'Devoir, pouvoir, vouloir', 'present · passé composé · imparfait'],
+  ['comp', 'Comparatives & superlatives', 'plus/moins/aussi · le meilleur'],
+  ['drm', 'Être vs avoir in the passé composé', 'DR MRS VANDERTRAMP'],
+  ['write', 'À vous! paragraphs', 'meals · shopping · restaurant photo']
+];
+const sOverview = () => `<div class="card"><p class="eyebrow">What the test asks</p><h3 class="card-h">Unité 1 study map</h3>
+  <div class="topics">${OV.map(([id, t, s]) => `<button class="topic" data-go="${id}"><b>${t}</b><small>${s}</small></button>`).join('')}</div></div>`;
+const dl = rows => `<dl class="vl">${rows.map(([a, b]) => `<div><dt>${a}</dt><dd>${b}</dd></div>`).join('')}</dl>`;
+
+function sFood() {
+  return `<h2 class="sec-head">Food, the market & the restaurant</h2>
+  <div class="sheet">
+    <div class="card"><h3>Les couleurs et les aliments</h3><div class="clist">${COLORS.map(([c, hex, w]) => `<div><span class="sw"><i style="background:${hex}"></i><b>${c}</b></span><p>${w}</p></div>`).join('')}</div></div>
+    ${FCATS.map(([cat, title]) => `<div class="card"><h3>${title}</h3>${dl(FOOD.filter(f => f[2] === cat).map(f => [esc(f[0]), esc(f[1])]))}</div>`).join('')}
+    <div class="card"><h3>Where to buy it</h3>${dl(SHOPS.map(s => [esc(s[0]), `${s[1]}<br><small>${esc(s[2])}</small>`]))}</div>
+    <div class="card"><h3>Du, de la, des: “some”</h3><ul class="list">
+      <li><b>du</b> (masc.), <b>de la</b> (fem.), <b>de l'</b> (vowel), <b>des</b> (plural): Je mange du pain.</li>
+      <li>After a <b>negative</b> → <b>de</b>: Je ne mange jamais de viande.</li>
+      <li>After a <b>quantity</b> → <b>de</b>: un kilo de tomates, une tranche de jambon, beaucoup de sucre.</li>
+      <li>After <b>aimer, adorer, préférer, détester</b> → <b>le, la, les</b>: J'adore le fromage.</li>
+      <li><b>Si</b> = yes to a negative question: Tu ne manges pas de poisson ? Si !</li></ul></div>
+    <div class="card"><h3>Phrases you'll hear</h3>${dl([['Vous désirez ?', 'What would you like?'], ["Je voudrais…", "I'd like…"], ['Ça fait combien ?', 'How much is it?'], ['Ça fait 4 euros 50.', "That's €4.50."], ['Elles coûtent 2 euros le kilo.', 'They cost €2 a kilo.'], ["L'addition, s'il vous plaît.", 'The check, please.'], ['Le service est compris.', 'The tip is included.'], ['Je suis au régime.', "I'm on a diet."]])}</div>
+  </div>`;
+}
+function sVerbs() {
+  return `<h2 class="sec-head">Venir, tenir &amp; family</h2>
+  <div class="card"><p class="eyebrow">The pattern</p>
+    <p style="margin:6px 0 10px">All six verbs follow one pattern. Revenir and devenir are built on venir; retenir and maintenir are built on tenir. Learn venir and tenir and you know all six.</p>
+    <ul class="list">
+      <li><b>Endings:</b> -s, -s, -t, -ons, -ez, -ent.</li>
+      <li><b>The boot:</b> je, tu, il/elle/on, and ils/elles get the stem <b>-ien-</b> (viens, tient). Nous and vous keep the plain stem (venons, tenez).</li>
+      <li><b>Ils/elles doubles the n:</b> viennent, tiennent, maintiennent.</li>
+      <li><b>Passé composé:</b> venir, revenir, devenir use <b>être</b> (elle est devenue). Tenir, retenir, maintenir use <b>avoir</b> (elle a tenu).</li>
+    </ul>
+    <p class="legend"><i></i> Shaded boxes are inside the boot.</p>
+  </div>
+  <div class="sheet">${FV.map(v => `<div class="card"><h3>${v.inf} <span class="pos">${esc(v.en)}</span></h3>${fTable(v)}</div>`).join('')}</div>`;
+}
+function sTime() {
+  return `<h2 class="sec-head">Depuis, pendant, il y a (textbook p. 63)</h2>
+  <div class="time3">
+    <div class="card"><p class="tword">depuis</p><p class="tmean">for / since. Still happening now.</p><p class="formula">PRESENT + depuis + time</p>
+      <p class="fx">J'habite ici depuis trois ans.<i>I've lived here for three years (and still do).</i></p>
+      <p class="fx">Il pleut depuis lundi.<i>It's been raining since Monday.</i></p></div>
+    <div class="card"><p class="tword">pendant</p><p class="tmean">for / during. A set length of time.</p><p class="formula">any tense + pendant + time</p>
+      <p class="fx">J'ai dormi pendant huit heures.<i>I slept for eight hours.</i></p>
+      <p class="fx">Pendant le film, on mange du pop-corn.<i>During the movie, we eat popcorn.</i></p></div>
+    <div class="card"><p class="tword">il y a</p><p class="tmean">ago. One moment in the past.</p><p class="formula">PASSÉ COMPOSÉ + il y a + time</p>
+      <p class="fx">Je suis arrivé il y a deux jours.<i>I arrived two days ago.</i></p>
+      <p class="fx">Il y a trois ans que j'habite ici.<i>Il y a … que + present = depuis.</i></p></div>
+  </div>
+  <div class="sheet">
+    <div class="card"><h3>Which one? Ask yourself</h3><ol class="steps">
+      <li>Does the English say <b>“ago”</b>? Use <b>il y a</b>.</li>
+      <li>Is it <b>still going on</b> (“have been…”)? Use <b>depuis</b> with the <b>present</b> tense.</li>
+      <li>Is it a <b>finished or planned</b> length of time, or “during”? Use <b>pendant</b>.</li></ol>
+      <p class="muted" style="margin:10px 0 0;font-size:.9rem">Trap: English says “I <i>have been</i> waiting”, but French uses the present: <b>J'attends depuis…</b>, never “J'ai attendu depuis”.</p></div>
+    <div class="card"><h3>Answering in full sentences</h3><p class="muted" style="margin:0 0 8px;font-size:.9rem">The test asks you to answer “yes” using each expression at least once.</p><ul class="list">
+      <li>Tu as fait la vaisselle ? → Oui, j'ai fait la vaisselle <b>il y a</b> une heure.</li>
+      <li>Paul attend le bus ? → Oui, il attend le bus <b>depuis</b> vingt minutes.</li>
+      <li>Pendant combien de temps est-ce que tu as étudié ? → J'ai étudié <b>pendant</b> deux heures.</li>
+      <li>On laisse le gâteau au four combien de temps ? → On le laisse au four <b>pendant</b> trente minutes.</li></ul></div>
+    <div class="card"><h3>Asking the question</h3><ul class="list">
+      <li><b>Depuis quand…?</b> Since when? Answer with a starting point: depuis lundi, depuis 2020.</li>
+      <li><b>Depuis combien de temps…?</b> How long (so far)? Answer with a length: depuis deux ans.</li>
+      <li><b>Pendant combien de temps…?</b> How long (finished)? Answer: pendant une heure.</li>
+      <li><b>Il y a combien de temps que…?</b> Same as depuis combien de temps.</li></ul></div>
+  </div>`;
+}
+function sDrm() {
+  return `<h2 class="sec-head">Passé composé: être or avoir?</h2>
+  <div class="card"><p class="eyebrow">DR MRS VANDERTRAMP</p>
+    <p style="margin:6px 0 4px">Most verbs use <b>avoir</b>. These 16 use <b>être</b>; each letter is one verb.</p>
+    <p class="mnem" aria-label="DR MRS VANDERTRAMP">${'DR MRS VANDERTRAMP'.split('').map(c => c === ' ' ? '<span class="sp"></span>' : `<span>${c}</span>`).join('')}</p>
+    <div class="drm">${DRM.map(d => `<div><span class="L">${d[0]}</span><b>${d[1]}</b><span>${d[2]}</span><span>${d[3]}</span></div>`).join('')}</div></div>
+  <div class="sheet">
+    <div class="card"><h3>How to build it</h3><p class="formula">subject + être/avoir (present) + past participle</p><ul class="list" style="margin-top:10px">
+      <li>Regular participles: -er → <b>-é</b> (mangé), -ir → <b>-i</b> (fini), -re → <b>-u</b> (vendu).</li>
+      <li>Être: je suis, tu es, il est, nous sommes, vous êtes, ils sont.</li>
+      <li>Avoir: j'ai, tu as, il a, nous avons, vous avez, ils ont.</li></ul></div>
+    <div class="card"><h3>Agreement with être</h3><ul class="list">
+      <li>Il est allé · Elle est allé<b>e</b></li><li>Ils sont allé<b>s</b> · Elles sont allé<b>es</b></li>
+      <li>Je suis allé(e) · Nous sommes allé(e)s</li>
+      <li>With <b>avoir</b>, no agreement: elle a mangé, ils ont fini.</li></ul></div>
+    <div class="card"><h3>Watch out: verbs with an object</h3><p style="margin:0 0 8px">Sortir, monter, descendre, rentrer use <b>avoir</b> when they have a direct object:</p><ul class="list">
+      <li>Elle <b>est</b> sortie. (She went out.)</li><li>Elle <b>a</b> sorti la poubelle. (She took out the trash.)</li>
+      <li>Il <b>est</b> monté. · Il <b>a</b> monté les valises.</li></ul></div>
+    <div class="card"><h3>Irregular participles (avoir)</h3>${dl(IRRPP.filter(v => v.aux === 'avoir').map(v => [v.inf, `<b>${v.pp}</b>`]))}</div>
+  </div>`;
+}
+function sIrreg() {
+  return `<h2 class="sec-head">Être, avoir &amp; other irregulars</h2>
+  <div class="sheet">${IRR.map(v => `<div class="card"><h3>${v[0]} <span class="pos">${esc(v[1])}</span></h3>${conjTable(v[2])}<p class="pcline">Passé composé: <b>${v[3]}</b> · Imparfait: <b>${pj('je', v[4] + 'ais')}</b></p></div>`).join('')}</div>
+  <div class="sheet">
+    <div class="card"><h3>Devoir, pouvoir, vouloir: read the time clue</h3>${dl([
+      ["<b>Aujourd'hui, maintenant</b>", 'present: je dois, il peut, nous voulons'],
+      ['<b>Hier, samedi dernier, ce matin</b>', "passé composé: j'ai dû, il a pu, nous avons voulu"],
+      ['<b>Autrefois, avant, toujours</b> (back then)', 'imparfait: je devais, il pouvait, nous voulions']])}
+      <p class="muted" style="margin:10px 0 0;font-size:.9rem">Negatives wrap the helper verb: ils <b>n'ont pas pu</b>, je <b>ne veux pas</b>.</p></div>
+    <div class="card"><h3>Imparfait in one line</h3><p class="formula">nous form − ons + ais, ais, ait, ions, iez, aient</p>
+      <ul class="list" style="margin-top:10px"><li>nous voul<s>ons</s> → je voulais, ils voulaient</li><li>nous dev<s>ons</s> → je devais</li><li>Only exception: être → <b>ét-</b> (j'étais)</li></ul></div>
+  </div>`;
+}
+function sComp() {
+  return `<h2 class="sec-head">Comparatives &amp; superlatives</h2>
+  <div class="time3">
+    <div class="card"><p class="tword">plus … que</p><p class="tmean">more … than (+)</p><p class="fx">Un congélateur est plus froid qu'un frigo.<i>A freezer is colder than a fridge.</i></p></div>
+    <div class="card"><p class="tword">moins … que</p><p class="tmean">less … than (−)</p><p class="fx">L'épicerie est moins grande que le supermarché.<i>The grocery is smaller than the supermarket.</i></p></div>
+    <div class="card"><p class="tword">aussi … que</p><p class="tmean">as … as (=)</p><p class="fx">Les poires sont aussi chères que les pommes.<i>Pears are as expensive as apples.</i></p></div>
+  </div>
+  <div class="sheet">
+    <div class="card"><h3>Irregular: bon, bien, mauvais</h3>${dl([
+      ['<b>bon</b> (good, adj.)', 'meilleur(e)(s) → le/la/les meilleur(e)(s)'],
+      ['<b>bien</b> (well, adv.)', 'mieux → le mieux'],
+      ['<b>mauvais</b> (bad)', 'plus mauvais / pire']])}
+      <p class="muted" style="margin:10px 0 0;font-size:.9rem">Adjective → describes a noun (le pain est <b>meilleur</b>). Adverb → describes a verb (il cuisine <b>mieux</b>). Never say “plus bon” or “plus bien”.</p></div>
+    <div class="card"><h3>Superlative: the most / the best</h3><p class="formula">le/la/les + plus/moins + adjective + de</p><ul class="list" style="margin-top:10px">
+      <li>Adjective after the noun: repeat the article. C'est <b>le</b> restaurant <b>le plus</b> charmant <b>du</b> quartier.</li>
+      <li><b>BAGS</b> adjectives (beau, joli, vieux, jeune, nouveau, bon, mauvais, grand, petit) go before: C'est <b>le plus grand</b> marché du quartier.</li>
+      <li>bon → <b>le meilleur</b> pain · <b>la meilleure</b> boulangerie</li>
+      <li>After a superlative use <b>de</b> (du quartier), not “dans”.</li></ul></div>
+    <div class="card"><h3>Agreement</h3><p style="margin:0">The adjective agrees with the first noun: Les fraises sont plus <b>chères</b> que les pommes. Cette tarte est <b>meilleure</b>.</p></div>
+  </div>`;
+}
+function sWrite() {
+  const P = (t, task, frames, model) => `<div class="card"><p class="eyebrow">Prompt</p><h3>${t}</h3><p class="muted" style="margin:0 0 10px">${task}</p>
+    <ul class="list">${frames.map(f => `<li>${f}</li>`).join('')}</ul><p class="eyebrow" style="margin-top:14px">Model</p><p class="model">${model}</p></div>`;
+  return `<h2 class="sec-head">À vous! Writing</h2>
+  <div class="sheet">
+    ${P('Your meals', 'Breakfast, lunch, and dinner during the week and on weekends, plus what friends or family eat. At least 5 sentences.',
+      ['Pendant la semaine, au petit-déjeuner, je mange… et je bois…', 'À midi, je déjeune à la cantine. Je prends souvent…', 'Le soir, ma famille dîne vers… heures. Nous mangeons…', 'Le week-end, …', 'Mon frère ne mange jamais de… / Ma meilleure amie est au régime, alors…'],
+      "Pendant la semaine, je prends le petit-déjeuner à sept heures. D'habitude, je mange des céréales et je bois du jus d'orange. À midi, je déjeune à la cantine avec mes amis : je prends souvent du poulet, du riz et une pomme. Le soir, ma famille dîne vers sept heures et ma mère prépare des pâtes ou du poisson. Le week-end, nous mangeons un grand petit-déjeuner avec des œufs, du pain et de la confiture. Ma sœur ne mange jamais de viande, alors elle prend beaucoup de légumes.")}
+    ${P('Planning a party', 'What you will buy and where in town you will go to buy it. At least 4 sentences.',
+      ["D'abord, je vais aller à la boulangerie pour acheter…", 'Ensuite, à la charcuterie, je vais prendre…', 'Puis, au marché, je vais acheter un kilo de…', 'Enfin, je vais passer à la pâtisserie pour…'],
+      "Samedi, je vais organiser une fête pour l'anniversaire de mon ami. D'abord, je vais aller à la boulangerie pour acheter trois baguettes. Ensuite, je vais passer à la charcuterie, parce que le jambon est meilleur qu'au supermarché. Puis, au marché, je vais acheter un kilo de tomates, des fraises et de la laitue. Enfin, je vais prendre une grande tarte aux pommes à la pâtisserie.")}
+    ${P('Describe a restaurant photo', 'Que se passe-t-il ? What people are doing, what they say to the server, what is on the table. 4 sentences.',
+      ['Il y a… dans un restaurant…', 'Le serveur apporte…', 'Sur la table, il y a…', 'Un client dit au serveur : « … »'],
+      "Il y a des clients dans un restaurant élégant. Le serveur apporte un gâteau au chocolat sur une assiette. Sur la table, il y a une nappe blanche, des verres, des fourchettes et des couteaux. Un homme dit au serveur : « L'addition, s'il vous plaît ! »")}
+    <div class="card"><h3>Grammar checklist</h3><ul class="list">
+      <li>Enough complete sentences (5 for meals, 4 for the others).</li>
+      <li>Partitives: du / de la / de l' / des, and <b>de</b> after a negative.</li>
+      <li>Quantities: un kilo de, une tranche de, beaucoup de.</li>
+      <li>Order words: d'abord, ensuite, puis, enfin.</li>
+      <li>Plans: aller + infinitive (je vais acheter).</li>
+      <li>For style, add one comparison or superlative (le meilleur pain du quartier).</li>
+      <li>Mention other people: ma mère prépare…, mes amis prennent…</li></ul></div>
+  </div>`;
+}
+const SHEET = { food: sFood, verbs: sVerbs, time: sTime, drm: sDrm, irreg: sIrreg, comp: sComp, write: sWrite };
+
+/* ---------- tab ---------- */
+const FTOPICS = [['all', 'Everything'], ['food', 'Food & market'], ['verbs', 'Venir, tenir…'], ['time', 'Depuis · pendant · il y a'], ['drm', 'DR MRS VANDERTRAMP'], ['irreg', 'Être, avoir & irregulars'], ['comp', 'Comparisons'], ['write', 'Writing']];
+const FR = { mode: store.get('cram.fmode', 'sheet'), topic: store.get('cram.ftopic', 'all'), known: new Set(store.get('cram.fknown', [])) };
+$('#f-topic').innerHTML = FTOPICS.map(([id, l]) => `<button class="chip" data-v="${id}">${l}</button>`).join('');
+const fGo = id => { FR.topic = id; store.set('cram.ftopic', id); renderFrench(); };
 $('#f-mode').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { FR.mode = b.dataset.v; store.set('cram.fmode', FR.mode); renderFrench(); } });
-$('#f-topic').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) { FR.topic = b.dataset.v; store.set('cram.ftopic', FR.topic); renderFrench(); } });
+$('#f-topic').addEventListener('click', e => { const b = e.target.closest('[data-v]'); if (b) fGo(b.dataset.v); });
 function renderFrench() {
+  if (!FTOPICS.some(t => t[0] === FR.topic)) FR.topic = 'all';
+  if (!['sheet', 'cards', 'quiz'].includes(FR.mode)) FR.mode = 'sheet';
   setPressed($('#f-mode'), FR.mode); setPressed($('#f-topic'), FR.topic);
   const body = $('#f-body'); keyHandlers.french = null; body.onclick = null;
+  const ids = FR.topic === 'all' ? FTOPICS.slice(1).map(t => t[0]) : [FR.topic];
+  if (FR.mode === 'sheet') {
+    body.innerHTML = `<div class="panel">${FR.topic === 'all' ? sOverview() : ''}${ids.map(id => SHEET[id]()).join('')}</div>`;
+    body.onclick = e => { const b = e.target.closest('[data-go]'); if (b) { fGo(b.dataset.go); $('#p-french').scrollIntoView({ behavior: 'smooth' }); } };
+    return;
+  }
+  if (FR.topic === 'write') {
+    body.innerHTML = `<div class="card empty">Writing practice lives on the study sheet: prompts, sentence starters, and model paragraphs.<div class="row" style="margin-top:14px"><button class="btn primary" data-sheet>Open the writing sheet</button></div></div>`;
+    body.onclick = e => { if (e.target.closest('[data-sheet]')) { FR.mode = 'sheet'; store.set('cram.fmode', 'sheet'); renderFrench(); } };
+    return;
+  }
   if (FR.mode === 'cards') {
-    Flashcards(body, fItems(), 'french', {
+    Flashcards(body, ids.filter(id => CARDS[id]).flatMap(id => CARDS[id]()), 'french', {
       swapLabel: 'Answer first',
       isKnown: id => FR.known.has(id),
       setKnown: (id, y) => { if (y) FR.known.add(id); else FR.known.delete(id); store.set('cram.fknown', [...FR.known]); }
     });
-  } else if (FR.mode === 'quiz') {
-    Quiz(body, () => fQuestions(FR.topic), 'french');
   } else {
-    body.innerHTML = fSheet();
+    Quiz(body, () => FR.topic === 'all' ? shuffle(ids.filter(id => QZ[id]).flatMap(id => QZ[id](4))) : QZ[FR.topic](16), 'french');
   }
 }
 
